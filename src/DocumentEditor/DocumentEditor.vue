@@ -18,6 +18,62 @@
   </div>
 </template>
 
+<script setup>
+import useDocumentEditor from '@/composables/useDocumentEditor';
+
+const props = defineProps({
+	// This contains the initial content of the document that can be synced
+	// It must be an Array: each array item is a new set of pages containing the
+	// item (string or component). You can see that as predefined page breaks.
+	// See the Demo.vue file for a good usage example.
+	content: {
+		type: Array,
+		required: true
+	},
+
+	// Display mode of the pages
+	display: {
+		type: String,
+		default: 'grid' // ["grid", "horizontal", "vertical"]
+	},
+
+	// Sets whether document text can be modified
+	editable: {
+		type: Boolean,
+		default: true
+	},
+
+	// Overlay function returning page headers and footers in HTML
+	overlay: Function,
+
+	// Pages format in mm (should be an array containing [width, height])
+	page_format_mm: {
+		type: Array,
+		default: () => [ 210, 297 ]
+	},
+
+	// Page margins in CSS
+	page_margins: {
+		type: [ String, Function ],
+		default: '10mm 15mm'
+	},
+
+	// Display zoom. Only acts on the screen display
+	zoom: {
+		type: Number,
+		default: 1.0
+	},
+
+	// "Do not break" test function: should return true on elements you don't want to be split over multiple pages but rather be moved to the next page
+	do_not_break: Function
+});
+
+const emit = defineEmits([
+	// Emitted when the content is modified
+	'update:content'
+]);
+</script>
+
 <script>
 import { defineCustomElement } from 'vue';
 import { move_children_forward_recursively, move_children_backwards_with_merging } from './imports/page-transition-mgmt.js';
@@ -251,7 +307,7 @@ export default {
         // update pages in the DOM
         this.update_pages_elts();
       }
-      
+
 
       // Restore selection and remove empty elements
       if(document.body.contains(start_marker)){
@@ -490,7 +546,7 @@ export default {
           overlay_elt.style.overflow = "hidden";
           page.elt.prepend(overlay_elt);
         }
-        
+
         print_body.append(page.elt);
       }
 
