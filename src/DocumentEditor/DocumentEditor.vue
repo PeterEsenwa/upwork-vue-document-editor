@@ -9,7 +9,7 @@
 		</div>
 
 		<!-- Document editor -->
-		<div class="content" ref="content" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
+		<div class="content" ref="contentRef" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
 			@keydown="keydown">
 			<!-- This is a Vue "hoisted" static <div> which contains every page of the document and can be modified by the DOM -->
 		</div>
@@ -74,39 +74,19 @@ export default {
 	},
 
 	mounted() {
-		this.update_editor_width();
-		this.update_css_media_style();
 		this.reset_content();
-		window.addEventListener('resize', this.update_editor_width);
 		window.addEventListener('click', this.process_current_text_style);
 		window.addEventListener('beforeprint', this.before_print);
 		window.addEventListener('afterprint', this.after_print);
 	},
 
-	beforeUpdate() {
-		this.pages_overlay_refs = [];
-	},
-
 	beforeUnmount() {
-		window.removeEventListener('resize', this.update_editor_width);
 		window.removeEventListener('click', this.process_current_text_style);
 		window.removeEventListener('beforeprint', this.before_print);
 		window.removeEventListener('afterprint', this.after_print);
 	},
 
-	computed: {
-		css_media_style() { // creates a CSS <style> and returns it
-			const style = document.createElement('style');
-			document.head.appendChild(style);
-			return style;
-		}
-	},
-
-
 	methods: {
-		// Computes a random 5-char UUID
-		new_uuid: () => Math.random().toString(36).slice(-5),
-
 		// Resets all content from the content property
 		reset_content() {
 			// Prevent launching this function multiple times
@@ -131,7 +111,7 @@ export default {
 
 			// Get page height from first empty page
 			const first_page_elt = this.pages[0].elt;
-			if (!this.$refs.content.contains(first_page_elt)) this.$refs.content.appendChild(first_page_elt); // restore page in DOM in case it was removed
+			if (!this.$refs.contentRef.contains(first_page_elt)) this.$refs.contentRef.appendChild(first_page_elt); // restore page in DOM in case it was removed
 			this.pages_height = first_page_elt.clientHeight + 1; // allow one pixel precision
 
 			// Initialize text pages
@@ -147,14 +127,14 @@ export default {
 				}
 
 				// restore page in DOM in case it was removed
-				if (!this.$refs.content.contains(page.elt)) this.$refs.content.appendChild(page.elt);
+				if (!this.$refs.contentRef.contains(page.elt)) this.$refs.contentRef.appendChild(page.elt);
 			}
 
 			// Spread content over several pages if it overflows
 			this.fit_content_over_pages();
 
 			// Remove the text cursor from the content, if any (its position is lost anyway)
-			this.$refs.content.blur();
+			this.$refs.contentRef.blur();
 
 			// Clear "reset in progress" flag
 			this.reset_in_progress = false;
@@ -357,93 +337,8 @@ export default {
 			this.current_text_style = style;
 		},
 
-		// Process the specific style (position and size) of each page <div> and content <div>
-		page_style(page_idx, allow_overflow) {
-			const px_in_mm = 0.2645833333333;
-			const page_width = this.page_format_mm[0] / px_in_mm;
-			const page_spacing_mm = 10;
-			const page_with_plus_spacing = (page_spacing_mm + this.page_format_mm[0]) * this.zoom / px_in_mm;
-			const view_padding = 20;
-			const inner_width = this.editor_width - 2 * view_padding;
-			let nb_pages_x = 1, page_column, x_pos, x_ofx, left_px, top_mm, bkg_width_mm, bkg_height_mm;
-			if (this.display == 'horizontal') {
-				if (inner_width > (this.pages.length * page_with_plus_spacing)) {
-					nb_pages_x = Math.floor(inner_width / page_with_plus_spacing);
-					left_px = inner_width / (nb_pages_x * 2) * (1 + page_idx * 2) - page_width / 2;
-				} else {
-					nb_pages_x = this.pages.length;
-					left_px = page_with_plus_spacing * page_idx + page_width / 2 * (this.zoom - 1);
-				}
-				top_mm = 0;
-				bkg_width_mm = this.zoom * (this.page_format_mm[0] * nb_pages_x + (nb_pages_x - 1) * page_spacing_mm);
-				bkg_height_mm = this.page_format_mm[1] * this.zoom;
-			} else { // "grid", vertical
-				nb_pages_x = Math.floor(inner_width / page_with_plus_spacing);
-				if (nb_pages_x < 1 || this.display == 'vertical') nb_pages_x = 1;
-				page_column = (page_idx % nb_pages_x);
-				x_pos = inner_width / (nb_pages_x * 2) * (1 + page_column * 2) - page_width / 2;
-				x_ofx = Math.max(0, (page_width * this.zoom - inner_width) / 2);
-				left_px = x_pos + x_ofx;
-				top_mm = ((this.page_format_mm[1] + page_spacing_mm) * this.zoom) * Math.floor(page_idx / nb_pages_x);
-				const nb_pages_y = Math.ceil(this.pages.length / nb_pages_x);
-				bkg_width_mm = this.zoom * (this.page_format_mm[0] * nb_pages_x + (nb_pages_x - 1) * page_spacing_mm);
-				bkg_height_mm = this.zoom * (this.page_format_mm[1] * nb_pages_y + (nb_pages_y - 1) * page_spacing_mm);
-			}
-			if (page_idx >= 0) {
-				const style = {
-					position: 'absolute',
-					left: 'calc(' + left_px + 'px + ' + view_padding + 'px)',
-					top: 'calc(' + top_mm + 'mm + ' + view_padding + 'px)',
-					width: this.page_format_mm[0] + 'mm',
-					// "height" is set below
-					padding: (typeof this.page_margins == 'function') ? this.page_margins(page_idx + 1, this.pages.length) : this.page_margins,
-					transform: 'scale(' + this.zoom + ')'
-				};
-				style[allow_overflow ? 'minHeight' : 'height'] = this.page_format_mm[1] + 'mm';
-				return style;
-			} else {
-				// Content/background <div> is sized so it lets a margin around pages when scrolling at the end
-				return {
-					width: 'calc(' + bkg_width_mm + 'mm + ' + (2 * view_padding) + 'px)',
-					height: 'calc(' + bkg_height_mm + 'mm + ' + (2 * view_padding) + 'px)'
-				};
-			}
-		},
-
 		// Utility to convert page_style to CSS string
 		css_to_string: (css) => Object.entries(css).map(([ k, v ]) => k.replace(/[A-Z]/g, match => ('-' + match.toLowerCase())) + ':' + v).join(';'),
-
-		// Update pages <div> from this.pages data
-		update_pages_elts() {
-			// Removing deleted pages
-			const deleted_pages = [ ...this.$refs.content.children ].filter((page_elt) => !this.pages.find(page => (page.elt == page_elt)));
-			for (const page_elt of deleted_pages) {
-				page_elt.remove();
-			}
-
-			// Adding / updating pages
-			for (const [ page_idx, page ] of this.pages.entries()) {
-				// Get either existing page_elt or create it
-				if (!page.elt) {
-					page.elt = document.createElement('div');
-					page.elt.className = 'page';
-					page.elt.dataset.isVDEPage = '';
-					const next_page = this.pages[page_idx + 1];
-					this.$refs.content.insertBefore(page.elt, next_page ? next_page.elt : null);
-				}
-				// Update page properties
-				page.elt.dataset.contentIdx = page.content_idx;
-				if (!this.printing_mode) page.elt.style = Object.entries(this.page_style(page_idx, page.template ? false : true))
-					.map(([ k, v ]) => k.replace(/[A-Z]/g, match => ('-' + match.toLowerCase())) + ':' + v)
-					.join(';'); // (convert page_style to CSS string)
-				page.elt.contentEditable = (this.editable && !page.template) ? true : false;
-			}
-		},
-
-		update_css_media_style() {
-			this.css_media_style.innerHTML =
-				'@media print { @page { size: ' + this.page_format_mm[0] + 'mm ' + this.page_format_mm[1] + 'mm; margin: 0 !important; } .hidden-print { display: none !important; } }';
-		},
 
 		// Prepare content before opening the native print box
 		before_print() {
@@ -519,7 +414,7 @@ export default {
 			// restore pages and overlays
 			for (const [ page_idx, page ] of this.pages.entries()) {
 				page.elt.style = this.css_to_string(this.page_style(page_idx, page.template ? false : true));
-				this.$refs.content.append(page.elt);
+				this.$refs.contentRef.append(page.elt);
 				const overlay_elt = this.pages_overlay_refs[page.uuid];
 				if (overlay_elt) {
 					overlay_elt.style = this.css_to_string(this.page_style(page_idx, false));
@@ -577,9 +472,16 @@ export default {
 			current_text_style,
 			printing_mode,
 
+			css_media_style,
+
+			contentRef,
 			editorRef,
 
+			new_uuid,
+			page_style,
+			update_pages_elts,
 			update_editor_width,
+			update_css_media_style,
 		} = useDocumentEditor(props, emit);
 
 		return {
@@ -591,9 +493,16 @@ export default {
 			current_text_style,
 			printing_mode,
 
+			css_media_style,
+
+			contentRef,
 			editorRef,
 
+			new_uuid,
+			page_style,
+			update_pages_elts,
 			update_editor_width,
+			update_css_media_style,
 		}
 	}
 }

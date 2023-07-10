@@ -71,7 +71,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		return Math.random().toString(36).slice(-5);
 	}
 
-	// Computes the page style for a given page index
+	// Process the specific style (position and size) of each page <div> and content <div>
 	function page_style(page_idx: number, allow_overflow: boolean = false) {
 		const px_in_mm = 0.2645833333333;
 		const page_width = props.page_format_mm[0] / px_in_mm;
@@ -128,6 +128,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		}
 	}
 
+	// Update pages <div> from this.pages data
 	function update_pages_elts() {
 		// Removing deleted pages
 		const deleted_pages = [
@@ -275,6 +276,10 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		editorRef,
 		css_media_style,
 
+		new_uuid,
+		page_style,
+		update_pages_elts,
 		update_editor_width,
+		update_css_media_style,
 	}
 }
