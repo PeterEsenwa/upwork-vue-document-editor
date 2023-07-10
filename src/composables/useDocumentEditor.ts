@@ -66,11 +66,6 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		return style;
 	});
 
-	// Computes a random 5-char UUID
-	function new_uuid() {
-		return Math.random().toString(36).slice(-5);
-	}
-
 	// Process the specific style (position and size) of each page <div> and content <div>
 	function page_style(page_idx: number, allow_overflow: boolean = false) {
 		const px_in_mm = 0.2645833333333;
@@ -276,7 +271,6 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		editorRef,
 		css_media_style,
 
-		new_uuid,
 		page_style,
 		update_pages_elts,
 		update_editor_width,

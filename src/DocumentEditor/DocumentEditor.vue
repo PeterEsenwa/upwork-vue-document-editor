@@ -20,9 +20,12 @@
 </template>
 
 <script>
+import { customAlphabet } from 'nanoid/non-secure';
 import { defineCustomElement } from 'vue';
 import { move_children_forward_recursively, move_children_backwards_with_merging } from './imports/page-transition-mgmt.js';
 import useDocumentEditor from '@/composables/useDocumentEditor';
+
+const nanoid = customAlphabet('1234567890', 5);
 
 export default {
 
@@ -102,7 +105,7 @@ export default {
 
 			// Delete all pages and set one new page per content item
 			this.pages = this.content.map((content, content_idx) => ({
-				uuid: this.new_uuid(),
+				uuid: nanoid(5),
 				content_idx,
 				template: content.template,
 				props: content.props
@@ -202,7 +205,7 @@ export default {
 
 						// if there is no next page for the same content, create it
 						if (!next_page || next_page.content_idx != page.content_idx) {
-							next_page = { uuid: this.new_uuid(), content_idx: page.content_idx };
+							next_page = { uuid: nanoid(5), content_idx: page.content_idx };
 							this.pages.splice(page_idx + 1, 0, next_page);
 							this.update_pages_elts();
 							next_page_elt = next_page.elt;
@@ -477,7 +480,6 @@ export default {
 			contentRef,
 			editorRef,
 
-			new_uuid,
 			page_style,
 			update_pages_elts,
 			update_editor_width,
@@ -498,7 +500,6 @@ export default {
 			contentRef,
 			editorRef,
 
-			new_uuid,
 			page_style,
 			update_pages_elts,
 			update_editor_width,
