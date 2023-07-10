@@ -8,6 +8,7 @@ import {
 	defineCustomElement,
 	CSSProperties
 } from 'vue';
+import createStyleElement from '@/composables/createStyleElement';
 
 // Get props from ../DocumentEditor/DocumentEditor.vue
 type DocumentEditorProps = Readonly<{
@@ -60,11 +61,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 
 	const editorRef = ref<HTMLElement>();
 
-	const css_media_style = computed(() => {
-		const style = document.createElement('style');
-		document.head.appendChild(style);
-		return style;
-	});
+	const css_media_style = computed(() => createStyleElement());
 
 	// Process the specific style (position and size) of each page <div> and content <div>
 	function page_style(page_idx: number, allow_overflow: boolean = false) {
