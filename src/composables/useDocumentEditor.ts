@@ -10,8 +10,8 @@ import {
 } from 'vue';
 
 // Get props from ../DocumentEditor/DocumentEditor.vue
-interface DocumentEditorProps {
-	content: (string | ComponentOptions)[];
+type DocumentEditorProps = Readonly<{
+	content: Array<string | ComponentOptions>;
 	display: string;
 	editable: boolean;
 	overflow: Function;
@@ -19,7 +19,7 @@ interface DocumentEditorProps {
 	page_margins: string | Function;
 	zoom: number;
 	do_not_break: Function;
-}
+}>;
 
 interface DocumentEditorEmit {
 	(event: ('update:content'), content: (string | ComponentOptions)[]): void;
@@ -32,7 +32,7 @@ interface UseDocumentEditorParams {
 	emit: DocumentEditorEmit;
 }
 
-export default ({ props, emit }: UseDocumentEditorParams) => {
+export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 	// contains {uuid, content_idx, prev_html, template, props, elt} for each pages of the document
 	const pages = ref<Record<string, any>[]>([]);
 
@@ -261,4 +261,20 @@ export default ({ props, emit }: UseDocumentEditorParams) => {
 		// window.removeEventListener('beforeprint', before_print);
 		// window.removeEventListener('afterprint', after_print);
 	});
+
+	return {
+		pages,
+		pages_overlay_refs,
+		pages_height,
+		editor_width,
+		prevent_next_content_update_from_parent,
+		current_text_style,
+		printing_mode,
+		reset_in_progress,
+		contentRef,
+		editorRef,
+		css_media_style,
+
+		update_editor_width,
+	}
 }
