@@ -8,7 +8,7 @@ import {
 	defineCustomElement,
 	CSSProperties
 } from 'vue';
-import createStyleElement from '@/composables/createStyleElement';
+import createStyleElement from '@/utils/createStyleElement';
 
 // Get props from ../DocumentEditor/DocumentEditor.vue
 type DocumentEditorProps = Readonly<{
@@ -34,7 +34,7 @@ interface UseDocumentEditorParams {
 }
 
 export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
-	// contains {uuid, content_idx, prev_html, template, props, elt} for each pages of the document
+	// contains {uuid, content_idx, prev_html, template, props, elt} for each page of the document
 	const pages = ref<Record<string, any>[]>([]);
 
 	// contains page overlays refs indexed by page uuid
