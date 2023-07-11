@@ -442,11 +442,6 @@ export default {
 			},
 			deep: true
 		},
-		display: {
-			handler() {
-				this.updatePagesELTs();
-			}
-		},
 		page_format_mm: {
 			handler() {
 				this.update_css_media_style();
@@ -456,11 +451,6 @@ export default {
 		page_margins: {
 			handler() {
 				this.reset_content();
-			}
-		},
-		zoom: {
-			handler() {
-				this.updatePagesELTs();
 			}
 		}
 	},

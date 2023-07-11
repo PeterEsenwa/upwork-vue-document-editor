@@ -5,7 +5,7 @@ import {
 	onBeforeUnmount,
 	computed,
 	ComponentOptions,
-	CSSProperties
+	CSSProperties, watch
 } from 'vue';
 import createStyleElement from '@/utils/createStyleElement';
 import useUpdatePageELTs from '@/composables/useUpdatePageELTs';
@@ -233,6 +233,13 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		// window.removeEventListener('click', process_current_text_style);
 		// window.removeEventListener('beforeprint', before_print);
 		// window.removeEventListener('afterprint', after_print);
+	});
+
+	watch([
+		() => props.display,
+		() => props.zoom,
+	], () => {
+		updatePagesELTs();
 	});
 
 	return {
