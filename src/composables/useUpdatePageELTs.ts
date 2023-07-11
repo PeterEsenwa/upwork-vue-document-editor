@@ -1,13 +1,15 @@
-import { Ref } from 'vue';
+import { Ref, CSSProperties } from 'vue';
+
+export interface UseUpdatePageELTsParams {
+	contentRef: Ref<HTMLElement | undefined>;
+	pages: Ref<Record<string, any>[]>;
+	pageStyle: (pageIndex: number, isTemplate: boolean) => CSSProperties;
+	printingMode: Ref<boolean>;
+	props: { editable: boolean };
+}
 
 export default function useUpdatePageELTs(
-	contentRef: Ref<HTMLElement | undefined>,
-	pages: Ref<Record<string, any>[]>,
-	pageStyle: (pageIndex: number, isTemplate: boolean) => Record<string, string>,
-	printingMode: Ref<boolean>,
-	props: {
-		editable: boolean;
-	},
+	{ contentRef, pages, pageStyle, printingMode, props }: UseUpdatePageELTsParams,
 ) {
 	// Update pages <div> from this.pages data
 	const updatePagesELTs = () => {

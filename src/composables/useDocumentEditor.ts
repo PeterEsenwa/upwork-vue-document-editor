@@ -5,10 +5,10 @@ import {
 	onBeforeUnmount,
 	computed,
 	ComponentOptions,
-	defineCustomElement,
 	CSSProperties
 } from 'vue';
 import createStyleElement from '@/utils/createStyleElement';
+import useUpdatePageELTs from '@/composables/useUpdatePageELTs';
 
 // Get props from ../DocumentEditor/DocumentEditor.vue
 type DocumentEditorProps = Readonly<{
@@ -120,35 +120,15 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		}
 	}
 
-	// Update pages <div> from this.pages data
-	function update_pages_elts() {
-		// Removing deleted pages
-		const deleted_pages = [
-			...contentRef.value?.children ?? []
-		].filter((page_elt) => {
-			return !pages.value.find(page => (page.elt == page_elt));
-		});
-
-		for (const page_elt of deleted_pages) {
-			page_elt.remove();
-		}
-
-		// Adding / updating pages
-		for (const [ page_idx, page ] of pages.value.entries()) {
-			// Get either existing page_elt or create it
-			if (!page.elt) {
-				page.elt = document.createElement('div');
-				page.elt.className = 'page';
-				page.elt.dataset.isVDEPage = '';
-				const next_page = pages.value[page_idx + 1];
-				contentRef.value?.insertBefore(page.elt, next_page ? next_page.elt : null);
-			}
-			// Update page properties
-			page.elt.dataset.contentIdx = page.content_idx;
-			if (!printing_mode.value) page.elt.style = Object.entries(page_style(page_idx, !page.template)).map(([ k, v ]) => k.replace(/[A-Z]/g, match => ('-' + match.toLowerCase())) + ':' + v).join(';'); // (convert page_style to CSS string)
-			page.elt.contentEditable = (props.editable && !page.template);
-		}
-	}
+	const {
+		updatePagesELTs
+	} = useUpdatePageELTs({
+		contentRef,
+		pages,
+		pageStyle: page_style,
+		printingMode: printing_mode,
+		props
+	});
 
 	// Resets all content from the content property
 	// function reset_content() {
@@ -214,7 +194,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 	function update_editor_width() {
 		editorRef.value?.classList.add('hide_children');
 		editor_width.value = editorRef.value?.clientWidth || 0;
-		update_pages_elts();
+		updatePagesELTs();
 		editorRef.value?.classList.remove('hide_children');
 	}
 
@@ -269,7 +249,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		css_media_style,
 
 		page_style,
-		update_pages_elts,
+		updatePagesELTs,
 		update_editor_width,
 		update_css_media_style,
 	}

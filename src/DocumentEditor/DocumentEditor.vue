@@ -110,7 +110,7 @@ export default {
 				template: content.template,
 				props: content.props
 			}));
-			this.update_pages_elts();
+			this.updatePagesELTs();
 
 			// Get page height from first empty page
 			const first_page_elt = this.pages[0].elt;
@@ -207,7 +207,7 @@ export default {
 						if (!next_page || next_page.content_idx != page.content_idx) {
 							next_page = { uuid: nanoid(5), content_idx: page.content_idx };
 							this.pages.splice(page_idx + 1, 0, next_page);
-							this.update_pages_elts();
+							this.updatePagesELTs();
 							next_page_elt = next_page.elt;
 						}
 
@@ -224,7 +224,7 @@ export default {
 				}
 
 				// update pages in the DOM
-				this.update_pages_elts();
+				this.updatePagesELTs();
 			}
 
 
@@ -444,7 +444,7 @@ export default {
 		},
 		display: {
 			handler() {
-				this.update_pages_elts();
+				this.updatePagesELTs();
 			}
 		},
 		page_format_mm: {
@@ -460,7 +460,7 @@ export default {
 		},
 		zoom: {
 			handler() {
-				this.update_pages_elts();
+				this.updatePagesELTs();
 			}
 		}
 	},
@@ -481,7 +481,7 @@ export default {
 			editorRef,
 
 			page_style,
-			update_pages_elts,
+			updatePagesELTs,
 			update_editor_width,
 			update_css_media_style,
 		} = useDocumentEditor(props, emit);
@@ -501,7 +501,7 @@ export default {
 			editorRef,
 
 			page_style,
-			update_pages_elts,
+			updatePagesELTs,
 			update_editor_width,
 			update_css_media_style,
 		}
