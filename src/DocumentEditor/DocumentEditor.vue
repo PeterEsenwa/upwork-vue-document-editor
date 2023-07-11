@@ -10,7 +10,7 @@
 
 		<!-- Document editor -->
 		<div class="content" ref="contentRef" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
-			@keydown="keydown">
+			@keydown="onKeydown">
 			<!-- This is a Vue "hoisted" static <div> which contains every page of the document and can be modified by the DOM -->
 		</div>
 
@@ -24,6 +24,8 @@ import { customAlphabet } from 'nanoid/non-secure';
 import { defineCustomElement } from 'vue';
 import { move_children_forward_recursively, move_children_backwards_with_merging } from './imports/page-transition-mgmt.js';
 import useDocumentEditor from '@/composables/useDocumentEditor';
+import useKeepFirstPage from '@/composables/useKeepFirstPage';
+import { toRef } from '@vueuse/core';
 
 const nanoid = customAlphabet('1234567890', 5);
 
@@ -257,16 +259,6 @@ export default {
 			if (e.inputType != 'insertText') this.process_current_text_style(); // update current style if it has changed
 		},
 
-		// Keydown event
-		keydown(e) {
-			// if the document is empty, prevent removing the first page container with a backspace input (keycode 8)
-			// which is now the default behavior for web browsers
-			if (e.keyCode == 8 && this.content.length <= 1 && typeof (this.content[0]) == 'string') {
-				const text = this.content[0].replace(/<\w+(\s+("[^"]*"|'[^']*'|[^>])+)?>|<\/\w+>/gi, '');
-				if (!text) e.preventDefault();
-			}
-		},
-
 		// Emit content change to parent
 		emit_new_content() {
 			let removed_pages_flag = false; // flag to call reset_content if some pages were removed by the user
@@ -476,6 +468,12 @@ export default {
 			update_css_media_style,
 		} = useDocumentEditor(props, emit);
 
+		const propContentRef = toRef(props, 'content');
+
+		const {
+			onKeydown
+		} = useKeepFirstPage(propContentRef);
+
 		return {
 			pages,
 			pages_overlay_refs,
@@ -494,6 +492,8 @@ export default {
 			updatePagesELTs,
 			update_editor_width,
 			update_css_media_style,
+
+			onKeydown,
 		}
 	}
 }
