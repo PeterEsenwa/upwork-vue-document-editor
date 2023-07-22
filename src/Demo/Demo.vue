@@ -23,6 +23,8 @@ import useDocument from '@/composables/useDocument.ts';
 import { ref } from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
+import {useStorage, watchDebounced} from "@vueuse/core";
+import useDownloadJson from "@/composables/useDownloadJson";
 
 export default {
 	components: { VueDocumentEditor, VueFileToolbarMenu },
@@ -148,6 +150,7 @@ export default {
 				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
 				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
 				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
+				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
 
 				{ is: 'spacer' },
 
@@ -551,6 +554,21 @@ export default {
 			resetStackTracking,
 		} = useDocument();
 
+    // Retrieve the content from the local storage
+    const storedContent = useStorage('content-key', content);
+
+    // Create a debounced watcher for the content variable
+    watchDebounced(content, (newContent) => {
+          // Save the new value in local storage
+          storedContent.value = newContent;
+        },
+        { debounce: 1000 }
+    );
+
+    const {
+      downloadJson
+    } = useDownloadJson(content)
+
 		const {
 			doImport,
 		} = useDocumentImport(content)
@@ -569,6 +587,7 @@ export default {
 			canUndo,
 			resetStackTracking,
 			editor,
+      downloadJson,
 
 			doImport,
 		}
