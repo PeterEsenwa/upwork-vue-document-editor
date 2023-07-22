@@ -139,7 +139,7 @@ export default {
 					text: 'New', title: 'New', icon: 'description', click: () => {
 						if (confirm('This will create an empty document. Are you sure?')) {
 							this.content = [ '' ];
-							this.resetContentHistory();
+							this.resetStackTracking();
 						}
 					}
 				},
@@ -545,6 +545,7 @@ export default {
 			redo,
 			canRedo,
 			canUndo,
+			resetStackTracking,
 		} = useDocument();
 
 		const {
@@ -559,6 +560,7 @@ export default {
 			redo,
 			canRedo,
 			canUndo,
+			resetStackTracking,
 			editor,
 		}
 	}
