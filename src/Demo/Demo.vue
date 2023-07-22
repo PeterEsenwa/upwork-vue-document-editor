@@ -22,6 +22,7 @@ import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set fro
 import useDocument from '@/composables/useDocument.ts';
 import { ref } from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
+import useDocumentImport from '@/composables/useDocumentImport';
 
 export default {
 	components: { VueDocumentEditor, VueFileToolbarMenu },
@@ -140,11 +141,13 @@ export default {
 						if (confirm('This will create an empty document. Are you sure?')) {
 							this.content = [ '' ];
 							this.resetStackTracking();
+							this.doImport();
 						}
 					}
 				},
 				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
 				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
+				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
 
 				{ is: 'spacer' },
 
@@ -549,6 +552,10 @@ export default {
 		} = useDocument();
 
 		const {
+			doImport,
+		} = useDocumentImport(content)
+
+		const {
 			addImage,
 		} = useImageUpload();
 
@@ -562,6 +569,8 @@ export default {
 			canUndo,
 			resetStackTracking,
 			editor,
+
+			doImport,
 		}
 	}
 }
