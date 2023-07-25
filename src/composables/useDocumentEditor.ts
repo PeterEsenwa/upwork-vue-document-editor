@@ -24,6 +24,7 @@ type DocumentEditorProps = Readonly<{
 
 interface DocumentEditorEmit {
 	(event: ('update:content'), content: (string | ComponentOptions)[]): void;
+	(event: ('editor-empty'), value: boolean): void;
 
 	'update:content': (content: string[]) => void;
 }
@@ -60,6 +61,14 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 	const contentRef = ref<HTMLElement>();
 
 	const editorRef = ref<HTMLElement>();
+
+
+
+	const isEditorEmpty = ref(false);
+
+	watch(isEditorEmpty, (isEmpty) => {
+		emit('editor-empty', isEmpty);
+	})
 
 	const css_media_style = computed(() => createStyleElement());
 
@@ -253,6 +262,7 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		reset_in_progress,
 		contentRef,
 		editorRef,
+		isEditorEmpty,
 		css_media_style,
 
 		page_style,

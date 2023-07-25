@@ -37,6 +37,12 @@ export default () => {
 		document.removeEventListener('keydown', redoUndoListener);
 	})
 
+	const canExport = ref(true)
+
+	const handleEditorEmptyChange = (isEmpty: boolean) => {
+		canExport.value = !isEmpty
+	}
+
 	return {
 		content,
 		undo,
@@ -45,5 +51,8 @@ export default () => {
 		canUndo,
 		pauseStackTracking,
 		resetStackTracking,
+
+		handleEditorEmptyChange,
+		canExport,
 	}
 }

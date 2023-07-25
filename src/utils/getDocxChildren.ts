@@ -1,5 +1,5 @@
 import { Paragraph } from 'docx';
-import { convertElement } from '@/utils/htmlConverter';
+// import { convertElement } from '@/utils/htmlConverter';
 import { FileChild } from 'docx/build/file/file-child';
 
 /**
@@ -14,17 +14,17 @@ import { FileChild } from 'docx/build/file/file-child';
  * @param {Element[]} htmlElements - The array of HTML elements to be transformed.
  * @returns {FileChild[]} - An array of FileChild objects for the 'docx' library.
  */
-export const getDocxChildren = (htmlElements: Element[]): FileChild[] => {
-	return htmlElements.map(node => {
-		const docElement = convertElement(node);
-
-		if (docElement instanceof Paragraph) {
-			return docElement;
-		}
-
-		const innerChildren = Array.isArray(docElement) ? docElement : [docElement];
-
-		// we need to wrap the text run in a paragraph
-		return new Paragraph({children: innerChildren});
-	});
-}
+// export const getDocxChildren = (htmlElements: Element[]): FileChild[] => {
+	// return htmlElements.map(node => {
+	// 	const docElement = convertElement(node);
+	//
+	// 	if (docElement instanceof Paragraph) {
+	// 		return docElement;
+	// 	}
+	//
+	// 	const innerChildren = Array.isArray(docElement) ? docElement : [docElement];
+	//
+	// 	// we need to wrap the text run in a paragraph
+	// 	return new Paragraph({children: innerChildren});
+	// });
+// }

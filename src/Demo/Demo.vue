@@ -8,6 +8,7 @@
 		<vue-document-editor class="editor" ref="editor"
 			v-model:content="content"
 			:overlay="overlay"
+		  @editor-empty="handleEditorEmptyChange"
 			:zoom="zoom"
 			:page_format_mm="page_format_mm"
 			:page_margins="page_margins"
@@ -20,7 +21,7 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import useDocument from '@/composables/useDocument.ts';
-import { ref } from 'vue';
+import {computed, ref} from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
 import {useStorage, watchDebounced} from "@vueuse/core";
@@ -150,7 +151,7 @@ export default {
 				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
 				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
 				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
-				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
+				{ text: 'Export', title: 'Export', disabled: !this.canExport , icon: 'download', click: () => this.downloadJson() },
 
 				{ is: 'spacer' },
 
@@ -552,6 +553,9 @@ export default {
 			canRedo,
 			canUndo,
 			resetStackTracking,
+
+      handleEditorEmptyChange,
+      canExport,
 		} = useDocument();
 
     // Retrieve the content from the local storage
@@ -590,6 +594,8 @@ export default {
       downloadJson,
 
 			doImport,
+      handleEditorEmptyChange,
+      canExport,
 		}
 	}
 }

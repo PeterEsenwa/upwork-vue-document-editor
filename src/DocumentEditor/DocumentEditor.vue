@@ -9,7 +9,7 @@
 		</div>
 
 		<!-- Document editor -->
-		<div class="content" ref="contentRef" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
+		<div class="content" ref="contentRef":contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
 			@keydown="onKeydown">
 			<!-- This is a Vue "hoisted" static <div> which contains every page of the document and can be modified by the DOM -->
 		</div>
