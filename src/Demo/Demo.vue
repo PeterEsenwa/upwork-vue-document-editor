@@ -501,20 +501,7 @@ export default {
 	
 	methods: {
 		// Page overlays (headers, footers, page numbers)
-		overlay(page, total) {
-			// Add page numbers on each page
-			let html = '<div style="position: absolute; bottom: 8mm; ' + ((page % 2) ? 'right' :
-				'left') + ': 10mm">Page ' + page + ' of ' + total + '</div>';
-			
-			// Add custom headers and footers from page 3
-			if (page >= 3) {
-				html +=
-					'<div style="position: absolute; left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5)"><strong>MYCOMPANY</strong> example.com /// This is a custom header overlay</div>';
-				html +=
-					'<div style="position: absolute; left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt">MY COMPANY - example.com /// This is a custom footer overlay</div>';
-			}
-			return html;
-		},
+
 		
 		// Undo / redo functions examples
 		// undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },

@@ -5,7 +5,7 @@
 		<div v-if="overlay" class="overlays" ref="overlays">
 			<div v-for="(page, page_idx) in pages" class="overlay" :key="page.uuid+'-overlay'"
 				:ref="(elt) => (pages_overlay_refs[page.uuid] = elt)"
-				v-html="overlay(page_idx+1, pages.length)" :style="page_style(page_idx, false)">
+				v-html="documentOverlay(page_idx+1, pages.length)" :style="page_style(page_idx, false)">
 			</div>
 		</div>
 
@@ -23,7 +23,7 @@
 
 <script>
 import { customAlphabet } from 'nanoid/non-secure';
-import { defineCustomElement } from 'vue';
+import {defineCustomElement, ref} from 'vue';
 import {
 	move_children_forward_recursively,
 	move_children_backwards_with_merging
@@ -458,6 +458,29 @@ export default {
 
 	setup(props, { emit }) {
 		const propContentRef = toRef(props, 'content');
+    const pageHeaderText = ref('');
+    const pageFooterText = ref('');
+
+    const documentOverlay = (page, total) => {
+      const styles = {
+        base: `position: absolute;`,
+        number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
+        header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
+        footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
+      };
+
+      // Add page numbers on each page
+      let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
+
+      // Add custom headers and footers from page 3
+      if (page) {
+        html +=
+            `<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
+        html +=
+            `<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
+      }
+      return html;
+    }
 
 		const {
 			onKeydown
@@ -468,6 +491,7 @@ export default {
 
 			onKeydown,
 			cssToString,
+      documentOverlay,
 		}
 	}
 }
