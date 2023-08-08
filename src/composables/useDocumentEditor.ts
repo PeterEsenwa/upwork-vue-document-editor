@@ -198,6 +198,18 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		editorRef.value?.classList.remove('hide_children');
 	}
 
+	function checkForImages(node: HTMLElement) {
+		if (node.tagName === 'IMG') {
+			node.style.maxWidth = '100%';
+		}
+		// If the node has child nodes, recursively check those as well
+		if (node.childNodes && node.childNodes.length > 0) {
+			for (const child of node.childNodes) {
+				checkForImages(child as HTMLElement);
+			}
+		}
+	}
+
 	// Updates the CSS media style
 	function update_css_media_style() {
 		css_media_style.value.innerHTML = `
@@ -213,6 +225,19 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 			}`;
 	}
 
+	const observer = new MutationObserver((mutations) => {
+		console.log('mutations', mutations);
+		for (const mutation of mutations) {
+			if (mutation.type === 'childList') {
+				// A new child element has been added to the parent element.
+				for (const node of mutation.addedNodes) {
+					// log the newly added nodes names
+					checkForImages(node as HTMLElement);
+				}
+			}
+		}
+	});
+
 	onMounted(() => {
 		update_editor_width();
 		update_css_media_style();
@@ -221,6 +246,11 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 		// window.addEventListener('click', process_current_text_style);
 		// window.addEventListener('beforeprint', before_print);
 		// window.addEventListener('afterprint', after_print);
+
+		const elementById = document.getElementById('content');
+		if (elementById) {
+			observer.observe(elementById, { childList: true });
+		}
 	});
 
 

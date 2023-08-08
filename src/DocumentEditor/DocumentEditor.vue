@@ -3,13 +3,15 @@
 
 		<!-- Page overlays (headers, footers, page numbers, ...) -->
 		<div v-if="overlay" class="overlays" ref="overlays">
-			<div v-for="(page, page_idx) in pages" class="overlay" :key="page.uuid+'-overlay'" :ref="(elt) => (pages_overlay_refs[page.uuid] = elt)"
+			<div v-for="(page, page_idx) in pages" class="overlay" :key="page.uuid+'-overlay'"
+				:ref="(elt) => (pages_overlay_refs[page.uuid] = elt)"
 				v-html="overlay(page_idx+1, pages.length)" :style="page_style(page_idx, false)">
 			</div>
 		</div>
 
 		<!-- Document editor -->
-		<div class="content" ref="contentRef" :contenteditable="editable" :style="page_style(-1)" @input="input" @keyup="process_current_text_style"
+		<div id="content" class="content" ref="contentRef" :contenteditable="editable" :style="page_style(-1)" @input="input"
+			@keyup="process_current_text_style"
 			@keydown="onKeydown">
 			<!-- This is a Vue "hoisted" static <div> which contains every page of the document and can be modified by the DOM -->
 		</div>
@@ -22,11 +24,16 @@
 <script>
 import { customAlphabet } from 'nanoid/non-secure';
 import { defineCustomElement } from 'vue';
-import { move_children_forward_recursively, move_children_backwards_with_merging } from './imports/page-transition-mgmt.js';
+import {
+	move_children_forward_recursively,
+	move_children_backwards_with_merging
+} from './imports/page-transition-mgmt.js';
 import useDocumentEditor from '@/composables/useDocumentEditor';
 import useKeepFirstPage from '@/composables/useKeepFirstPage';
 import { toRef } from '@vueuse/core';
 import cssToString from '@/utils/cssToString';
+import { removeDeletedPages } from '@/utils/removeDeletedPages';
+import { saveCurrentSelection } from '@/utils/saveCurrentSelection';
 
 const nanoid = customAlphabet('1234567890', 5);
 
@@ -125,7 +132,9 @@ export default {
 
 				// set raw HTML content
 				if (!this.content[page.content_idx]) page.elt.innerHTML = '<div><br></div>';
-				else if (typeof this.content[page.content_idx] == 'string') page.elt.innerHTML = '<div>' + this.content[page.content_idx] + '</div>';
+				else if (typeof this.content[page.content_idx] == 'string') {
+                    page.elt.innerHTML = `<div>${ this.content[page.content_idx] }</div>`;
+                }
 				else if (page.template) {
 					const componentElement = defineCustomElement(page.template);
 					customElements.define('component-' + page.uuid, componentElement);
@@ -257,7 +266,7 @@ export default {
 			if (!e) return; // check that event is set
 			this.fit_content_over_pages(); // fit content according to modifications
 			this.emit_new_content(); // emit content modification
-			if (e.inputType != 'insertText') this.process_current_text_style(); // update current style if it has changed
+			if (e.inputType !== 'insertText') this.process_current_text_style(); // update current style if it has changed
 		},
 
 		// Emit content change to parent
@@ -303,7 +312,7 @@ export default {
 			const sel = window.getSelection();
 			if (sel.focusNode) {
 				const element = sel.focusNode.tagName ? sel.focusNode : sel.focusNode.parentElement;
-				if (element && element.isContentEditable) {
+				if (element?.isContentEditable) {
 					style = window.getComputedStyle(element);
 
 					// compute additional properties
@@ -316,11 +325,11 @@ export default {
 						// stack CSS text-decoration as it is not overridden by children
 						style.textDecorationStack.push(parent_style.textDecoration);
 						// check if one parent is a list-item
-						if (parent_style.display == 'list-item') style.isList = true;
+						if (parent_style.display === 'list-item') style.isList = true;
 						// get first header level, if any
 						if (!style.headerLevel) {
 							for (let i = 1; i <= 6; i++) {
-								if (parent.tagName.toUpperCase() == 'H' + i) {
+								if (parent.tagName.toUpperCase() === 'H' + i) {
 									style.headerLevel = i;
 									break;
 								}
@@ -355,7 +364,9 @@ export default {
 				page.elt.style = ''; // reset page style for the clone
 				page.elt.style.position = 'relative';
 				page.elt.style.padding =
-					(typeof this.page_margins == 'function') ? this.page_margins(page_idx + 1, this.pages.length) : this.page_margins;
+					(typeof this.page_margins == 'function')
+                        ? this.page_margins(page_idx + 1, this.pages.length)
+                        : this.page_margins;
 				page.elt.style.breakBefore = page_idx ? 'page' : 'auto';
 				page.elt.style.width = 'calc(' + this.page_format_mm[0] + 'mm - 2px)';
 				page.elt.style.height = 'calc(' + this.page_format_mm[1] + 'mm - 2px)';
@@ -406,7 +417,7 @@ export default {
 
 			// restore pages and overlays
 			for (const [ page_idx, page ] of this.pages.entries()) {
-				page.elt.style = this.cssToString(this.page_style(page_idx, page.template ? false : true));
+				page.elt.style = this.cssToString(this.page_style(page_idx, !page.template));
 				this.$refs.contentRef.append(page.elt);
 				const overlay_elt = this.pages_overlay_refs[page.uuid];
 				if (overlay_elt) {
