@@ -5,7 +5,7 @@
 		<div class="overlays" ref="overlays">
 			<div v-for="(page, page_idx) in pages" class="overlay" :key="`${page.uuid}-overlay`"
 				 :ref="(elt) => (pages_overlay_refs[page.uuid] = elt)"
-				 v-html="overlaysHTML[page_idx]" :style="page_style(page_idx, false)">
+				 v-html="overlay(page_idx+1, pages.length)" :style="page_style(page_idx, false)">
 			</div>
 		</div>
 		
@@ -24,17 +24,15 @@
 
 <script>
 import {customAlphabet} from 'nanoid/non-secure';
-import {computed, defineCustomElement, ref, watch} from 'vue';
+import {defineCustomElement, ref, watch} from 'vue';
 import {
 	move_children_backwards_with_merging,
 	move_children_forward_recursively
 } from './imports/page-transition-mgmt.js';
 import useDocumentEditor from '@/composables/useDocumentEditor';
 import useKeepFirstPage from '@/composables/useKeepFirstPage';
-import {debouncedWatch, toRef} from '@vueuse/core';
+import {toRef} from '@vueuse/core';
 import cssToString from '@/utils/cssToString';
-import {removeDeletedPages} from '@/utils/removeDeletedPages';
-import {saveCurrentSelection} from '@/utils/saveCurrentSelection';
 
 const nanoid = customAlphabet('1234567890', 5);
 
@@ -70,8 +68,10 @@ export default {
 			type: Array,
 			default: () => [210, 297]
 		},
-		
-		// Page margins in CSS
+
+    overlay: Function,
+
+// Page margins in CSS
 		page_margins: {
 			type: [String, Function],
 			default: '10mm 15mm'
@@ -458,30 +458,7 @@ export default {
 	
 	setup(props, {emit}) {
 		const propContentRef = toRef(props, 'content');
-		const pageHeaderText = ref('');
-		const pageFooterText = ref('Footer');
-		
-		const documentOverlay = (page, total) => {
-			const styles = {
-				base: `position: absolute;`,
-				number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
-				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
-				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
-			};
-			
-			// Add page numbers on each page
-			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
-			
-			// Add custom headers and footers from page 3
-			if (page) {
-				html +=
-					`<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
-				html +=
-					`<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
-			}
-			return html;
-		}
-		
+
 		const useDocumentEditorOutput = useDocumentEditor(props, emit);
 		
 		const {
@@ -492,13 +469,13 @@ export default {
 		
 		watch(pages, (pages) => {
 			overlaysHTML.value = pages.map((page, index) => {
-				return documentOverlay(index + 1, pages.length);
+				return props.overlay(index + 1, pages.length);
 			});
 		}, {
 			deep: true,
 			immediate: true,
 		});
-		
+
 		const {
 			onKeydown
 		} = useKeepFirstPage(propContentRef);
@@ -507,10 +484,7 @@ export default {
 			...useDocumentEditorOutput,
 			
 			onKeydown,
-			saveCurrentSelection,
-			removeDeletedPages,
 			cssToString,
-			documentOverlay,
 			overlaysHTML,
 		}
 	}

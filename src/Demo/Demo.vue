@@ -2,8 +2,24 @@
 	<div class="main">
 		
 		<!-- Top bar -->
-		<vue-file-toolbar-menu :content="menu" class="bar"/>
-		
+		<vue-file-toolbar-menu :content="menu" class="bar" />
+    <base-modal
+        :model-value="isOpen"
+        @toggle-open="toggleOpen"
+        :is-open="isOpen"
+        class="base-dialog"
+     >
+      <template #body>
+        <div class="input-field">
+          <label for="header">Header :</label>
+          <input id="header" v-model="pageHeaderText" />
+        </div>
+        <div class="input-field">
+          <label for="footer">Footer :</label>
+          <input id="footer" v-model="pageFooterText" />
+        </div>
+      </template>
+    </base-modal>
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
 							 v-model:content="content"
@@ -31,9 +47,10 @@ import {useStorage, watchDebounced} from "@vueuse/core";
 import useDownloadJson from "@/composables/useDownloadJson";
 import TableSetup from "@/components/tableSetup.vue";
 import useTableSetup from "@/composables/useTableSetup";
+import BaseModal from "@/components/baseModal.vue";
 
 export default {
-	components: {TableSetup, VueDocumentEditor, VueFileToolbarMenu},
+	components: {BaseModal, TableSetup, VueDocumentEditor, VueFileToolbarMenu},
 	
 	data() {
 		return {
@@ -153,19 +170,13 @@ export default {
 						}
 					}
 				},
-				{text: 'Print', title: 'Print', icon: 'print', click: () => window.print()},
-				{
-					text: 'Insert Image',
-					icon: 'image',
-					disabled: !this.current_text_style,
-					title: 'Insert Image',
-					click: () => this.addImage()
-				},
-				{text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport()},
-				{text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson()},
-				
-				{is: 'spacer'},
-				
+				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
+				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
+				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
+				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
+				{ text: 'Header', title: 'Add Header', icon: 'add' , click: () => this.toggleOpen() },
+
+				{ is: 'spacer' },
 				// Undo / redo commands
 				{
 					title: 'Undo',
@@ -570,7 +581,36 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-		
+
+    const pageHeaderText = ref('');
+    const pageFooterText = ref('');
+
+    const isOpen = ref(false);
+
+    const toggleOpen = () => {
+      isOpen.value = !isOpen.value
+    }
+
+    const overlay = (page, total) => {
+      const styles = {
+        base: `position: absolute;`,
+        number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
+        header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
+        footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
+      };
+
+      // Add page numbers on each page
+      let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
+
+      // Add custom headers and footers from page 3
+      if (page) {
+        html +=
+            `<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
+        html +=
+            `<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
+      }
+      return html;
+    }
 		// Retrieve the content from the local storage
 		const storedContent = useStorage('content-key', content);
 		
@@ -611,6 +651,11 @@ export default {
 			canUndo,
 			resetStackTracking,
 			editor,
+			isOpen,
+			toggleOpen,
+			pageHeaderText,
+			pageFooterText,
+			overlay,
 			downloadJson,
 			isTableSetupOpen,
 			selectionAndRange,
@@ -675,5 +720,21 @@ body {
 	--bar-button-open-color: #188038;
 	--bar-button-active-bkg: #e6f4ea;
 	--bar-button-open-bkg: #e6f4ea;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+}
+
+.input-field label {
+  margin-bottom: 5px;
+}
+
+.input-field input {
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
 }
 </style>
