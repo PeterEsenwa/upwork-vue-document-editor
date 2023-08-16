@@ -4,19 +4,28 @@
 		<!-- Top bar -->
 		<vue-file-toolbar-menu :content="menu" class="bar" />
     <base-modal
-        :model-value="isOpen"
-        @toggle-open="toggleOpen"
-        :is-open="isOpen"
+        :model-value="isHeader"
+        @toggle-open="toggleHeader"
+        :is-open="isHeader"
         class="base-dialog"
      >
       <template #body>
         <div class="input-field">
           <label for="header">Header :</label>
-          <input id="header" v-model="pageHeaderText" />
+          <input id="header" v-model="temporaryHeaderText" />
         </div>
+      </template>
+    </base-modal>
+    <base-modal
+        :model-value="isFooter"
+        @toggle-open="toggleFooter"
+        :is-open="isFooter"
+        class="base-dialog"
+     >
+      <template #body>
         <div class="input-field">
           <label for="footer">Footer :</label>
-          <input id="footer" v-model="pageFooterText" />
+          <input id="footer" v-model="temporaryFooterText" />
         </div>
       </template>
     </base-modal>
@@ -40,7 +49,7 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import useDocument from '@/composables/useDocument.ts';
-import {ref} from 'vue';
+import {computed, ref, watch} from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
 import {useStorage, watchDebounced} from "@vueuse/core";
@@ -174,7 +183,8 @@ export default {
 				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
 				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
 				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
-				{ text: 'Header', title: 'Add Header', icon: 'add' , click: () => this.toggleOpen() },
+				{ text: 'Header', title: 'Add Header', click: () => this.toggleHeader() },
+				{ text: 'Footer', title: 'Add Footer', click: () => this.toggleFooter() },
 
 				{ is: 'spacer' },
 				// Undo / redo commands
@@ -582,14 +592,37 @@ export default {
 			resetStackTracking,
 		} = useDocument();
 
-    const pageHeaderText = ref('');
-    const pageFooterText = ref('');
+    const temporaryHeaderText = ref('');
+    const temporaryFooterText = ref('');
 
-    const isOpen = ref(false);
+    const isHeader = ref(false);
 
-    const toggleOpen = () => {
-      isOpen.value = !isOpen.value
+    const toggleHeader = () => {
+      isHeader.value = !isHeader.value
     }
+    
+    const isFooter = ref(false);
+
+    const toggleFooter = () => {
+      isFooter.value = !isFooter.value
+    }
+
+    const pageHeaderText = computed(() => {
+      if(isHeader.value === false) {
+        return temporaryHeaderText.value
+      } else {
+        return pageHeaderText.value
+      }
+    })
+
+    const pageFooterText = computed(() => {
+      if(isFooter.value === false) {
+        return temporaryFooterText.value
+      } else {
+        return pageFooterText.value
+      }
+    })
+
 
     const overlay = (page, total) => {
       const styles = {
@@ -611,16 +644,31 @@ export default {
       }
       return html;
     }
-		// Retrieve the content from the local storage
-		const storedContent = useStorage('content-key', content);
-		
-		// Create a debounced watcher for the content variable
-		watchDebounced(content, (newContent) => {
-				// Save the new value in local storage
-				storedContent.value = newContent;
-			},
-			{debounce: 1000}
-		);
+    // Retrieve the content from the local storage
+    const storedContent = useStorage('content-key', content);
+    const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
+    const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
+
+    // Create a debounced watcher for the content variable
+    watchDebounced(content, (newContent) => {
+          // Save the new value in local storage
+          storedContent.value = newContent;
+        },
+        { debounce: 1000 }
+    );
+
+    watchDebounced(pageHeaderText, (newHeaderText) => {
+      storedPageHeaderText.value = newHeaderText;
+    },
+        { debounce: 1000 }
+    );
+
+    watchDebounced(pageFooterText, (newFooterText) => {
+      storedPageFooterText.value = newFooterText;
+    },
+        { debounce: 1000 }
+    );
+
 		
 		const {
 			downloadJson
@@ -651,15 +699,20 @@ export default {
 			canUndo,
 			resetStackTracking,
 			editor,
-			isOpen,
-			toggleOpen,
+			downloadJson,
+			isHeader,
+			toggleHeader,
+			isFooter,
+			toggleFooter,
 			pageHeaderText,
 			pageFooterText,
+			temporaryFooterText,
+			temporaryHeaderText,
 			overlay,
-			downloadJson,
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
+
 			doImport,
 		}
 	}

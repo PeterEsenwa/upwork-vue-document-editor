@@ -20,6 +20,7 @@
           <slot name="close">
             <img
                 alt="close"
+                :src="xCircle"
             />
           </slot>
         </button>
@@ -44,6 +45,7 @@
 import { Dialog as HeadlessDialog, DialogOverlay, DialogPanel } from '@headlessui/vue';
 import {Ref, WritableComputedRef} from "vue";
 import {useVModel} from "@vueuse/core";
+import xCircle from "@/assets/x-circle.svg"
 
 const props = defineProps({
   modelValue: {
@@ -80,6 +82,8 @@ const close = () => {
 }
 
 .close-btn {
+  all: unset;
+  cursor: pointer;
   position: absolute;
   top: 1em;
   right: 1em;
