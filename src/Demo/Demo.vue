@@ -10,9 +10,28 @@
 			class="base-dialog"
 		>
 			<template #body>
+				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
+
 				<div class="input-field">
 					<label for="header">Header :</label>
-					<textarea id="header" v-model="temporaryHeaderText"/>
+					<div id="text-area" contenteditable="true"> {{ pageHeaderText }} </div>
+				</div>
+			</template>
+
+			<template #footer>
+				<div class="modal-buttons">
+					<button
+						class="submit-btn"
+						@click="captureContent"
+					>
+						Save
+					</button>
+					<button
+						class="close-btn"
+						@click="toggleHeader"
+					>
+						Cancel
+					</button>
 				</div>
 			</template>
 		</base-modal>
@@ -23,20 +42,39 @@
 			class="base-dialog"
 		>
 			<template #body>
+				<vue-file-toolbar-menu :content="headerMenu" class="bar"/>
+
 				<div class="input-field">
 					<label for="footer">Footer :</label>
-					<textarea id="footer" v-model="temporaryFooterText"/>
+					<div id="text-area" contenteditable="true"> {{ pageFooterText }} </div>
 				</div>
 			</template>
+
+	      <template #footer>
+	        <div class="modal-buttons">
+	          <button
+		          class="submit-btn"
+	              @click="captureContent"
+	          >
+	              Save
+              </button>
+		        <button
+			        class="close-btn"
+			        @click="toggleFooter"
+		        >
+			        Cancel
+		        </button>
+	        </div>
+	      </template>
 		</base-modal>
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
-							 v-model:content="content"
-							 :overlay="overlay"
-							 :zoom="zoom"
-							 :page_format_mm="page_format_mm"
-							 :page_margins="page_margins"
-							 :display="display"/>
+			 v-model:content="content"
+			 :overlay="overlay"
+			 :zoom="zoom"
+			 :page_format_mm="page_format_mm"
+			 :page_margins="page_margins"
+			 :display="display"/>
 		
 	<table-setup
 			v-model="isTableSetupOpen"
@@ -166,6 +204,75 @@ export default {
 	},
 	
 	computed: {
+		headerMenu() {
+			return [
+				// Rich text menus
+				{
+					icon: 'format_align_left',
+					title: 'Align left',
+					active: this.isLeftAligned,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+l' : 'ctrl+shift+l',
+					click: () => document.execCommand('justifyLeft')
+				},
+				{
+					icon: 'format_align_center',
+					title: 'Align center',
+					active: this.isCentered,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+e' : 'ctrl+shift+e',
+					click: () => document.execCommand('justifyCenter')
+				},
+				{
+					icon: 'format_align_right',
+					title: 'Align right',
+					active: this.isRightAligned,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+r' : 'ctrl+shift+r',
+					click: () => document.execCommand('justifyRight')
+				},
+				{
+					icon: 'format_align_justify',
+					title: 'Justify content',
+					active: this.isJustified,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+j' : 'ctrl+shift+j',
+					click: () => document.execCommand('justifyFull')
+				},
+				{is: 'separator'},
+				{
+					icon: 'format_bold',
+					title: 'Bold',
+					active: this.isBold,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+b' : 'ctrl+b',
+					click: () => document.execCommand('bold')
+				},
+				{
+					icon: 'format_italic',
+					title: 'Italic',
+					active: this.isItalic,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+i' : 'ctrl+i',
+					click: () => document.execCommand('italic')
+				},
+				{
+					icon: 'format_underline',
+					title: 'Underline',
+					active: this.isUnderline,
+					disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+u' : 'ctrl+u',
+					click: () => document.execCommand('underline')
+				},
+				{
+					icon: 'format_strikethrough',
+					title: 'Strike through',
+					active: this.isStrikeThrough,
+					disabled: !this.current_text_style,
+					click: () => document.execCommand('strikethrough')
+				},
+			]
+		},
 		// This is the menu content
 		menu() {
 			return [
@@ -628,8 +735,8 @@ export default {
 				return pageFooterText.value
 			}
 		})
-		
-		
+
+
 		const overlay = (page, total) => {
 			const styles = {
 				base: `position: absolute;`,
@@ -654,6 +761,17 @@ export default {
 		const storedContent = useStorage('content-key', content);
 		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
 		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
+
+		const captureContent = () => {
+			// capture the input
+			if (isHeader.value) {
+				temporaryHeaderText.value = document.querySelector('.base-dialog #text-area').innerHTML;
+				toggleHeader()
+			} else if (isFooter.value) {
+				temporaryFooterText.value = document.querySelector('.base-dialog #text-area').innerHTML;
+				toggleFooter()
+			}
+		}
 		
 		// Create a debounced watcher for the content variable
 		watchDebounced(content, (newContent) => {
@@ -662,19 +780,19 @@ export default {
 			},
 			{debounce: 1000}
 		);
-		
+
 		watchDebounced(pageHeaderText, (newHeaderText) => {
 				storedPageHeaderText.value = newHeaderText;
 			},
 			{debounce: 1000}
 		);
-		
+
 		watchDebounced(pageFooterText, (newFooterText) => {
 				storedPageFooterText.value = newFooterText;
 			},
 			{debounce: 1000}
 		);
-		
+
 		
 		const {
 			downloadJson
@@ -714,6 +832,8 @@ export default {
 			temporaryFooterText,
 			temporaryHeaderText,
 			overlay,
+			captureContent,
+			
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
@@ -764,7 +884,8 @@ body {
 	min-width: 100%;
 }
 
-.bar {
+.bar,
+.header-bar {
 	position: sticky;
 	left: 0;
 	top: 0;
@@ -777,6 +898,10 @@ body {
 	--bar-button-open-color: #188038;
 	--bar-button-active-bkg: #e6f4ea;
 	--bar-button-open-bkg: #e6f4ea;
+}
+
+.header-bar {
+	width: auto;
 }
 
 .input-field {
@@ -795,5 +920,60 @@ body {
 	padding: 10px;
 	border: 1px solid #cccccc;
 	border-radius: 4px;
+}
+
+#text-area {
+  width: auto;
+  height: 5em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  overflow: auto;
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.submit-btn {
+	 background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+	 color: white;
+	 padding: 10px 20px;
+	 margin-right: 10px;
+	 border-radius: 50px;
+	 border: none;
+	 box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+	 transition: all 0.2s ease;
+	 cursor: pointer;
+	 outline: none;
+}
+
+.submit-btn:hover {
+	background: linear-gradient(to right, #00f2fe, #4facfe);
+	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
+	color: #fff;
+	transform: translateY(-7px);
+}
+
+.close-btn {
+	background: linear-gradient(to right, #ed213a, #93291e);
+	color: white;
+	padding: 10px 20px;
+	margin-left: 10px;
+	border-radius: 50px;
+	border: none;
+	box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+	transition: all 0.2s ease;
+	cursor: pointer;
+	outline: none;
+}
+
+.close-btn:hover {
+	background: linear-gradient(to right, #93291e, #ed213a);
+	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
+	color: #fff;
+	transform: translateY(-7px);
 }
 </style>

@@ -12,19 +12,7 @@
 			<slot
 				:close="close"
 				name="closeBtn"
-			>
-				<button
-					class="close-btn"
-					@click="close"
-				>
-					<slot name="close">
-						<img
-							alt="close"
-							:src="xCircle"
-						/>
-					</slot>
-				</button>
-			</slot>
+			/>
 			
 			<slot
 				:close="close"
