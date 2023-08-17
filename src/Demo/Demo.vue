@@ -87,7 +87,7 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import useDocument from '@/composables/useDocument.ts';
-import {computed, ref} from 'vue';
+import {ref} from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
 import {useStorage, watchDebounced} from "@vueuse/core";
@@ -95,6 +95,7 @@ import useDownloadJson from "@/composables/useDownloadJson";
 import TableSetup from "@/components/tableSetup.vue";
 import useTableSetup from "@/composables/useTableSetup";
 import BaseModal from "@/components/baseModal.vue";
+import useSectionMarkers from "@/composables/useSectionMarkers";
 
 export default {
 	components: {BaseModal, TableSetup, VueDocumentEditor, VueFileToolbarMenu},
@@ -704,38 +705,18 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-		
-		const temporaryHeaderText = ref('');
-		const temporaryFooterText = ref('');
-		
-		const isHeader = ref(false);
-		
-		const toggleHeader = () => {
-			isHeader.value = !isHeader.value
-		}
-		
-		const isFooter = ref(false);
-		
-		const toggleFooter = () => {
-			isFooter.value = !isFooter.value
-		}
-		
-		const pageHeaderText = computed(() => {
-			if (isHeader.value === false) {
-				return temporaryHeaderText.value
-			} else {
-				return pageHeaderText.value
-			}
-		})
-		
-		const pageFooterText = computed(() => {
-			if (isFooter.value === false) {
-				return temporaryFooterText.value
-			} else {
-				return pageFooterText.value
-			}
-		})
 
+		const {
+			isHeader,
+			isFooter,
+			toggleHeader,
+			toggleFooter,
+			pageHeaderText,
+			pageFooterText,
+			captureContent,
+			temporaryFooterText,
+			temporaryHeaderText,
+		} = useSectionMarkers();
 
 		const overlay = (page, total) => {
 			const styles = {
@@ -750,10 +731,12 @@ export default {
 			
 			// Add custom headers and footers from page 3
 			if (page) {
-				html +=
-					`<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
-				html +=
-					`<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
+				if (pageHeaderText.value.trim() !== '') {
+					html += `<div style="${styles.base} ${styles.header}">${temporaryHeaderText.value}</div>`;
+				}
+				if (pageFooterText.value.trim() !== '') {
+					html += `<div style="${styles.base} ${styles.footer}">${temporaryFooterText.value}</div>`;
+				}
 			}
 			return html;
 		}
@@ -762,17 +745,6 @@ export default {
 		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
 		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
 
-		const captureContent = () => {
-			// capture the input
-			if (isHeader.value) {
-				temporaryHeaderText.value = document.querySelector('.base-dialog #text-area').innerHTML;
-				toggleHeader()
-			} else if (isFooter.value) {
-				temporaryFooterText.value = document.querySelector('.base-dialog #text-area').innerHTML;
-				toggleFooter()
-			}
-		}
-		
 		// Create a debounced watcher for the content variable
 		watchDebounced(content, (newContent) => {
 				// Save the new value in local storage
