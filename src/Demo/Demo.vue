@@ -2,33 +2,33 @@
 	<div class="main">
 		
 		<!-- Top bar -->
-		<vue-file-toolbar-menu :content="menu" class="bar" />
-    <base-modal
-        :model-value="isHeader"
-        @toggle-open="toggleHeader"
-        :is-open="isHeader"
-        class="base-dialog"
-     >
-      <template #body>
-        <div class="input-field">
-          <label for="header">Header :</label>
-          <input id="header" v-model="temporaryHeaderText" />
-        </div>
-      </template>
-    </base-modal>
-    <base-modal
-        :model-value="isFooter"
-        @toggle-open="toggleFooter"
-        :is-open="isFooter"
-        class="base-dialog"
-     >
-      <template #body>
-        <div class="input-field">
-          <label for="footer">Footer :</label>
-          <input id="footer" v-model="temporaryFooterText" />
-        </div>
-      </template>
-    </base-modal>
+		<vue-file-toolbar-menu :content="menu" class="bar"/>
+		<base-modal
+			:model-value="isHeader"
+			@toggle-open="toggleHeader"
+			:is-open="isHeader"
+			class="base-dialog"
+		>
+			<template #body>
+				<div class="input-field">
+					<label for="header">Header :</label>
+					<textarea id="header" v-model="temporaryHeaderText"/>
+				</div>
+			</template>
+		</base-modal>
+		<base-modal
+			:model-value="isFooter"
+			@toggle-open="toggleFooter"
+			:is-open="isFooter"
+			class="base-dialog"
+		>
+			<template #body>
+				<div class="input-field">
+					<label for="footer">Footer :</label>
+					<textarea id="footer" v-model="temporaryFooterText"/>
+				</div>
+			</template>
+		</base-modal>
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
 							 v-model:content="content"
@@ -38,7 +38,7 @@
 							 :page_margins="page_margins"
 							 :display="display"/>
 		
-		<table-setup
+	<table-setup
 			v-model="isTableSetupOpen"
 			:selection-and-range="selectionAndRange"
 		/>
@@ -49,7 +49,7 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import useDocument from '@/composables/useDocument.ts';
-import {computed, ref, watch} from 'vue';
+import {computed, ref} from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
 import {useStorage, watchDebounced} from "@vueuse/core";
@@ -179,14 +179,21 @@ export default {
 						}
 					}
 				},
-				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
-				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
-				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
-				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
-				{ text: 'Header', title: 'Add Header', click: () => this.toggleHeader() },
-				{ text: 'Footer', title: 'Add Footer', click: () => this.toggleFooter() },
-
-				{ is: 'spacer' },
+				{text: 'Print', title: 'Print', icon: 'print', click: () => window.print()},
+				{
+					text: 'Insert Image',
+					icon: 'image',
+					disabled: !this.current_text_style,
+					title: 'Insert Image',
+					click: () => this.addImage()
+				},
+				{text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport()},
+				{text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson()},
+				{text: 'Header', title: 'Add Header', click: () => this.toggleHeader()},
+				{text: 'Footer', title: 'Add Footer', click: () => this.toggleFooter()},
+				
+				{is: 'spacer'},
+				
 				// Undo / redo commands
 				{
 					title: 'Undo',
@@ -331,8 +338,7 @@ export default {
 					title: 'Create table',
 					icon: 'table_view',
 					disabled: !this.current_text_style,
-					click: () => this.startTableSetup()
-				},
+					click: () => this.startTableSetup()},
 				
 				{is: 'spacer'},
 				
@@ -522,7 +528,7 @@ export default {
 	
 	methods: {
 		// Page overlays (headers, footers, page numbers)
-
+		
 		
 		// Undo / redo functions examples
 		// undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
@@ -591,84 +597,84 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-
-    const temporaryHeaderText = ref('');
-    const temporaryFooterText = ref('');
-
-    const isHeader = ref(false);
-
-    const toggleHeader = () => {
-      isHeader.value = !isHeader.value
-    }
-    
-    const isFooter = ref(false);
-
-    const toggleFooter = () => {
-      isFooter.value = !isFooter.value
-    }
-
-    const pageHeaderText = computed(() => {
-      if(isHeader.value === false) {
-        return temporaryHeaderText.value
-      } else {
-        return pageHeaderText.value
-      }
-    })
-
-    const pageFooterText = computed(() => {
-      if(isFooter.value === false) {
-        return temporaryFooterText.value
-      } else {
-        return pageFooterText.value
-      }
-    })
-
-
-    const overlay = (page, total) => {
-      const styles = {
-        base: `position: absolute;`,
-        number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
-        header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
-        footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
-      };
-
-      // Add page numbers on each page
-      let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
-
-      // Add custom headers and footers from page 3
-      if (page) {
-        html +=
-            `<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
-        html +=
-            `<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
-      }
-      return html;
-    }
-    // Retrieve the content from the local storage
-    const storedContent = useStorage('content-key', content);
-    const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
-    const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
-
-    // Create a debounced watcher for the content variable
-    watchDebounced(content, (newContent) => {
-          // Save the new value in local storage
-          storedContent.value = newContent;
-        },
-        { debounce: 1000 }
-    );
-
-    watchDebounced(pageHeaderText, (newHeaderText) => {
-      storedPageHeaderText.value = newHeaderText;
-    },
-        { debounce: 1000 }
-    );
-
-    watchDebounced(pageFooterText, (newFooterText) => {
-      storedPageFooterText.value = newFooterText;
-    },
-        { debounce: 1000 }
-    );
-
+		
+		const temporaryHeaderText = ref('');
+		const temporaryFooterText = ref('');
+		
+		const isHeader = ref(false);
+		
+		const toggleHeader = () => {
+			isHeader.value = !isHeader.value
+		}
+		
+		const isFooter = ref(false);
+		
+		const toggleFooter = () => {
+			isFooter.value = !isFooter.value
+		}
+		
+		const pageHeaderText = computed(() => {
+			if (isHeader.value === false) {
+				return temporaryHeaderText.value
+			} else {
+				return pageHeaderText.value
+			}
+		})
+		
+		const pageFooterText = computed(() => {
+			if (isFooter.value === false) {
+				return temporaryFooterText.value
+			} else {
+				return pageFooterText.value
+			}
+		})
+		
+		
+		const overlay = (page, total) => {
+			const styles = {
+				base: `position: absolute;`,
+				number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
+				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
+				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
+			};
+			
+			// Add page numbers on each page
+			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
+			
+			// Add custom headers and footers from page 3
+			if (page) {
+				html +=
+					`<div style="${styles.base} ${styles.header}"> ${pageHeaderText.value} </div>`;
+				html +=
+					`<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
+			}
+			return html;
+		}
+		// Retrieve the content from the local storage
+		const storedContent = useStorage('content-key', content);
+		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
+		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
+		
+		// Create a debounced watcher for the content variable
+		watchDebounced(content, (newContent) => {
+				// Save the new value in local storage
+				storedContent.value = newContent;
+			},
+			{debounce: 1000}
+		);
+		
+		watchDebounced(pageHeaderText, (newHeaderText) => {
+				storedPageHeaderText.value = newHeaderText;
+			},
+			{debounce: 1000}
+		);
+		
+		watchDebounced(pageFooterText, (newFooterText) => {
+				storedPageFooterText.value = newFooterText;
+			},
+			{debounce: 1000}
+		);
+		
 		
 		const {
 			downloadJson
@@ -683,7 +689,6 @@ export default {
 		} = useImageUpload();
 		
 		const editor = ref();
-		
 		const {
 			isTableSetupOpen,
 			selectionAndRange,
@@ -712,7 +717,6 @@ export default {
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
-
 			doImport,
 		}
 	}
@@ -776,18 +780,20 @@ body {
 }
 
 .input-field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1em;
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 1em;
+	width: 50vw;
+	min-width: 10em;
 }
 
 .input-field label {
-  margin-bottom: 5px;
+	margin-bottom: 5px;
 }
 
-.input-field input {
-  padding: 10px;
-  border: 1px solid #cccccc;
-  border-radius: 4px;
+.input-field textarea {
+	padding: 10px;
+	border: 1px solid #cccccc;
+	border-radius: 4px;
 }
 </style>
