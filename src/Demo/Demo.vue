@@ -14,7 +14,7 @@
 
 				<div class="input-field">
 					<label for="header">Header :</label>
-					<div id="text-area" contenteditable="true"> {{ pageHeaderText }} </div>
+					<div id="text-area" contenteditable="true" v-html="pageHeaderText"/>
 				</div>
 			</template>
 
@@ -42,11 +42,11 @@
 			class="base-dialog"
 		>
 			<template #body>
-				<vue-file-toolbar-menu :content="headerMenu" class="bar"/>
+				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
 
 				<div class="input-field">
 					<label for="footer">Footer :</label>
-					<div id="text-area" contenteditable="true"> {{ pageFooterText }} </div>
+					<div id="text-area" contenteditable="true" v-html="pageFooterText"/>
 				</div>
 			</template>
 
@@ -212,7 +212,7 @@ export default {
 					icon: 'format_align_left',
 					title: 'Align left',
 					active: this.isLeftAligned,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'shift+command+l' : 'ctrl+shift+l',
 					click: () => document.execCommand('justifyLeft')
 				},
@@ -220,7 +220,7 @@ export default {
 					icon: 'format_align_center',
 					title: 'Align center',
 					active: this.isCentered,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'shift+command+e' : 'ctrl+shift+e',
 					click: () => document.execCommand('justifyCenter')
 				},
@@ -228,7 +228,7 @@ export default {
 					icon: 'format_align_right',
 					title: 'Align right',
 					active: this.isRightAligned,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'shift+command+r' : 'ctrl+shift+r',
 					click: () => document.execCommand('justifyRight')
 				},
@@ -236,7 +236,7 @@ export default {
 					icon: 'format_align_justify',
 					title: 'Justify content',
 					active: this.isJustified,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'shift+command+j' : 'ctrl+shift+j',
 					click: () => document.execCommand('justifyFull')
 				},
@@ -245,7 +245,7 @@ export default {
 					icon: 'format_bold',
 					title: 'Bold',
 					active: this.isBold,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'command+b' : 'ctrl+b',
 					click: () => document.execCommand('bold')
 				},
@@ -253,7 +253,7 @@ export default {
 					icon: 'format_italic',
 					title: 'Italic',
 					active: this.isItalic,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'command+i' : 'ctrl+i',
 					click: () => document.execCommand('italic')
 				},
@@ -261,7 +261,7 @@ export default {
 					icon: 'format_underline',
 					title: 'Underline',
 					active: this.isUnderline,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					hotkey: this.isMacLike ? 'command+u' : 'ctrl+u',
 					click: () => document.execCommand('underline')
 				},
@@ -269,7 +269,7 @@ export default {
 					icon: 'format_strikethrough',
 					title: 'Strike through',
 					active: this.isStrikeThrough,
-					disabled: !this.current_text_style,
+					// disabled: !this.current_text_style,
 					click: () => document.execCommand('strikethrough')
 				},
 			]
@@ -725,17 +725,17 @@ export default {
 				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
 				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
 			};
-			
+
 			// Add page numbers on each page
 			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
-			
+
 			// Add custom headers and footers from page 3
 			if (page) {
-				if (pageHeaderText.value.trim() !== '') {
-					html += `<div style="${styles.base} ${styles.header}">${temporaryHeaderText.value}</div>`;
+				if (pageHeaderText.value.trim()) {
+					html += `<div style="${styles.base} ${styles.header}">${pageHeaderText.value}</div>`;
 				}
-				if (pageFooterText.value.trim() !== '') {
-					html += `<div style="${styles.base} ${styles.footer}">${temporaryFooterText.value}</div>`;
+				if (pageFooterText.value.trim()) {
+					html += `<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
 				}
 			}
 			return html;
@@ -910,7 +910,7 @@ body {
 }
 
 .submit-btn {
-	 background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+	 background: #4facfe;
 	 color: white;
 	 padding: 10px 20px;
 	 margin-right: 10px;
@@ -923,14 +923,14 @@ body {
 }
 
 .submit-btn:hover {
-	background: linear-gradient(to right, #00f2fe, #4facfe);
+	background: #4facfe;
 	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
 	color: #fff;
 	transform: translateY(-7px);
 }
 
 .close-btn {
-	background: linear-gradient(to right, #ed213a, #93291e);
+	background: #ed213a;
 	color: white;
 	padding: 10px 20px;
 	margin-left: 10px;
@@ -943,7 +943,7 @@ body {
 }
 
 .close-btn:hover {
-	background: linear-gradient(to right, #93291e, #ed213a);
+	background: #ed213a;
 	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
 	color: #fff;
 	transform: translateY(-7px);
