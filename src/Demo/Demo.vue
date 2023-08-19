@@ -115,7 +115,7 @@ export default {
 			zoom_min: 0.10,
 			zoom_max: 5.0,
 			page_format_mm: [210, 297],
-			page_margins: '10mm 15mm',
+			page_margins: '15mm',
 			display: 'grid', // ["grid", "vertical", "horizontal"]
 			mounted: false, // will be true after this component is mounted
 			undo_count: -1, // contains the number of times user can undo (= current position in content_history)
@@ -271,6 +271,21 @@ export default {
 					active: this.isStrikeThrough,
 					// disabled: !this.current_text_style,
 					click: () => document.execCommand('strikethrough')
+				},
+				{
+					is: 'button-color',
+					type: 'compact',
+					menu_class: 'align-center',
+					// disabled: !this.current_text_style,
+					color: this.currentBgColor,
+					update_color: (new_color) => this.currentBgColor = new_color.hex8
+				},
+				{
+					text: 'Insert Image',
+					icon: 'image',
+					// disabled: !this.current_text_style,
+					title: 'Insert Image',
+					click: () => this.sectionImage()
 				},
 			]
 		},
@@ -718,11 +733,13 @@ export default {
 			temporaryHeaderText,
 		} = useSectionMarkers();
 
+		const currentBgColor = ref('transparent');
+
 		const overlay = (page, total) => {
 			const styles = {
 				base: `position: absolute;`,
 				number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
-				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5);`,
+				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: ${currentBgColor.value};`,
 				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
 			};
 
@@ -743,6 +760,7 @@ export default {
 		// Retrieve the content from the local storage
 		const storedContent = useStorage('content-key', content);
 		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
+		const storedHeaderBackgroundColor = useStorage('current-background-color-key', currentBgColor);
 		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
 
 		// Create a debounced watcher for the content variable
@@ -765,7 +783,13 @@ export default {
 			{debounce: 1000}
 		);
 
-		
+		watchDebounced(currentBgColor, (newBgColor) => {
+				storedHeaderBackgroundColor.value = newBgColor;
+			},
+			{debounce: 1000}
+		);
+
+
 		const {
 			downloadJson
 		} = useDownloadJson(content)
@@ -776,6 +800,7 @@ export default {
 		
 		const {
 			addImage,
+			sectionImage,
 		} = useImageUpload();
 		
 		const editor = ref();
@@ -788,6 +813,7 @@ export default {
 		return {
 			content,
 			addImage,
+			sectionImage,
 			undo,
 			redo,
 			canRedo,
@@ -805,6 +831,7 @@ export default {
 			temporaryHeaderText,
 			overlay,
 			captureContent,
+			currentBgColor,
 			
 			isTableSetupOpen,
 			selectionAndRange,
@@ -910,42 +937,24 @@ body {
 }
 
 .submit-btn {
-	 background: #4facfe;
+	 background: #188038;
 	 color: white;
 	 padding: 10px 20px;
 	 margin-right: 10px;
 	 border-radius: 50px;
 	 border: none;
-	 box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-	 transition: all 0.2s ease;
 	 cursor: pointer;
 	 outline: none;
 }
 
-.submit-btn:hover {
-	background: #4facfe;
-	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
-	color: #fff;
-	transform: translateY(-7px);
-}
-
 .close-btn {
-	background: #ed213a;
-	color: white;
+	background: white;
+	color: #188038;
 	padding: 10px 20px;
 	margin-left: 10px;
 	border-radius: 50px;
-	border: none;
-	box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-	transition: all 0.2s ease;
+	border: 1px solid #188038;
 	cursor: pointer;
 	outline: none;
-}
-
-.close-btn:hover {
-	background: #ed213a;
-	box-shadow: 0px 15px 20px rgba(46, 229, 157, 0.4);
-	color: #fff;
-	transform: translateY(-7px);
 }
 </style>
