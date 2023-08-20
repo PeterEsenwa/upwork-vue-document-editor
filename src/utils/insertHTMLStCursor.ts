@@ -1,47 +1,60 @@
-export function insertHtmlAtCursor(html: string) {
-    let sel: Selection | null, range: Range;
+export type SelectionAndRange = { range: Range | undefined; sel: Selection | null };
 
-    // Check if browser supports window.getSelection()
-    if (window.getSelection) {
-        sel = window.getSelection();
+export function retrieveSelectionAndRange(): SelectionAndRange {
+	let sel: Selection | null = null, range: Range | undefined;
 
-        if (!sel) {
-            return
-        }
+	// Check if browser supports window.getSelection()
+	if (window.getSelection) {
+		sel = window.getSelection();
 
-        // If some text is already selected or cursor is somewhere in the document
-        if (sel.getRangeAt && sel.rangeCount) {
-            // Get the first range of the selection
-            range = sel.getRangeAt(0);
+		// If some text is already selected or cursor is somewhere in the document
+		if (sel?.getRangeAt && sel.rangeCount) {
+			// Get the first range of the selection
+			range = sel.getRangeAt(0);
+		}
+	}
 
-            // Delete any selected text
-            range.deleteContents();
+	return {
+		sel,
+		range
+	}
+}
 
-            // Create a new div element and set its inner HTML to the passed HTML string
-            let el: HTMLDivElement = document.createElement("div");
-            el.innerHTML = html;
+export function insertHtmlAtCursor(
+	html: string,
+	selectionRangePosition: ReturnType<typeof retrieveSelectionAndRange> = retrieveSelectionAndRange()
+) {
+	let { sel, range } = selectionRangePosition;
 
-            // Create an empty DocumentFragment that will hold the nodes for insertion
-            let frag: DocumentFragment = document.createDocumentFragment(), node: ChildNode | null, lastNode: ChildNode | null = null;
+	if (!sel || !range) return;
 
-            // Move all child nodes of the div element to the DocumentFragment
-            while ((node = el.firstChild)) {
-                lastNode = frag.appendChild(node);
-            }
+	// Delete any selected text
+	range.deleteContents();
 
-            // Insert the DocumentFragment at the current cursor position (i.e., where the range starts)
-            range.insertNode(frag);
+	// Create a new div element and set its inner HTML to the passed HTML string
+	let el: HTMLDivElement = document.createElement("div");
+	el.innerHTML = html;
 
-            // If there is a last node after inserting the fragment, move the cursor after the last inserted node
-            if (lastNode) {
-                range = range.cloneRange();
-                range.setStartAfter(lastNode);
-                range.collapse(true);
+	// Create an empty DocumentFragment that will hold the nodes for insertion
+	let frag: DocumentFragment = document.createDocumentFragment(), node: ChildNode | null,
+		lastNode: ChildNode | null = null;
 
-                // Clear all ranges from the selection and add the new range
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        }
-    }
+	// Move all child nodes of the div element to the DocumentFragment
+	while ((node = el.firstChild)) {
+		lastNode = frag.appendChild(node);
+	}
+
+	// Insert the DocumentFragment at the current cursor position (i.e., where the range starts)
+	range.insertNode(frag);
+
+	// If there is a last node after inserting the fragment, move the cursor after the last inserted node
+	if (lastNode) {
+		range = range.cloneRange();
+		range.setStartAfter(lastNode);
+		range.collapse(true);
+
+		// Clear all ranges from the selection and add the new range
+		sel.removeAllRanges();
+		sel.addRange(range);
+	}
 }

@@ -1,18 +1,22 @@
 <template>
 	<div class="main">
-
+		
 		<!-- Top bar -->
-		<vue-file-toolbar-menu :content="menu" class="bar" />
-
+		<vue-file-toolbar-menu :content="menu" class="bar"/>
+		
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
-			v-model:content="content"
-			:overlay="overlay"
-			:zoom="zoom"
-			:page_format_mm="page_format_mm"
-			:page_margins="page_margins"
-			:display="display" />
-
+							 v-model:content="content"
+							 :overlay="overlay"
+							 :zoom="zoom"
+							 :page_format_mm="page_format_mm"
+							 :page_margins="page_margins"
+							 :display="display"/>
+		
+		<table-setup
+			v-model="isTableSetupOpen"
+			:selection-and-range="selectionAndRange"
+		/>
 	</div>
 </template>
 
@@ -20,15 +24,17 @@
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import VueDocumentEditor from '../DocumentEditor/DocumentEditor.vue'; // set from 'vue-document-editor' in your application
 import useDocument from '@/composables/useDocument.ts';
-import { ref } from 'vue';
+import {ref} from 'vue';
 import useImageUpload from '@/composables/useImageUpload';
 import useDocumentImport from '@/composables/useDocumentImport';
 import {useStorage, watchDebounced} from "@vueuse/core";
 import useDownloadJson from "@/composables/useDownloadJson";
+import TableSetup from "@/components/tableSetup.vue";
+import useTableSetup from "@/composables/useTableSetup";
 
 export default {
-	components: { VueDocumentEditor, VueFileToolbarMenu },
-
+	components: {TableSetup, VueDocumentEditor, VueFileToolbarMenu},
+	
 	data() {
 		return {
 			// This is where the pages content is stored and synced
@@ -43,7 +49,7 @@ export default {
 			zoom: 0.8,
 			zoom_min: 0.10,
 			zoom_max: 5.0,
-			page_format_mm: [ 210, 297 ],
+			page_format_mm: [210, 297],
 			page_margins: '10mm 15mm',
 			display: 'grid', // ["grid", "vertical", "horizontal"]
 			mounted: false, // will be true after this component is mounted
@@ -51,21 +57,21 @@ export default {
 			content_history: [] // contains the content states for undo/redo operations
 		}
 	},
-
+	
 	created() {
 		// Initialize gesture flags
 		let start_zoom_gesture = false;
 		let start_dist_touch = false;
 		let start_zoom_touch = false;
-
+		
 		// Manage ctrl+scroll zoom (or trackpad pinch)
 		window.addEventListener('wheel', (e) => {
 			if (e.ctrlKey) {
 				e.preventDefault();
 				this.zoom = Math.min(Math.max(this.zoom - e.deltaY * 0.01, this.zoom_min), this.zoom_max);
 			}
-		}, { passive: false });
-
+		}, {passive: false});
+		
 		// Manage trackpad pinch on Safari
 		window.addEventListener('gesturestart', (e) => {
 			e.preventDefault();
@@ -80,7 +86,7 @@ export default {
 		window.addEventListener('gestureend', () => {
 			start_zoom_gesture = false;
 		});
-
+		
 		// Manage pinch to zoom for touch devices
 		window.addEventListener('touchstart', (e) => {
 			if (e.touches.length === 2) {
@@ -91,7 +97,7 @@ export default {
 				);
 				start_zoom_touch = this.zoom;
 			}
-		}, { passive: false });
+		}, {passive: false});
 		window.addEventListener('touchmove', (e) => {
 			if (start_dist_touch && start_zoom_touch) {
 				e.preventDefault();
@@ -101,38 +107,38 @@ export default {
 				) / start_dist_touch;
 				this.zoom = Math.min(Math.max(zoom, this.zoom_min), this.zoom_max);
 			}
-		}, { passive: false });
+		}, {passive: false});
 		window.addEventListener('touchend', () => {
 			start_dist_touch = false;
 			start_zoom_touch = false;
-		}, { passive: false });
-
+		}, {passive: false});
+		
 		// Manage history undo/redo events
 		const manage_undo_redo = (e) => {
 			switch (e?.inputType) {
-			case 'historyUndo':
-				e.preventDefault();
-				e.stopPropagation();
-				this.undo();
-				break;
-			case 'historyRedo':
-				e.preventDefault();
-				e.stopPropagation();
-				this.redo();
-				break;
+				case 'historyUndo':
+					e.preventDefault();
+					e.stopPropagation();
+					this.undo();
+					break;
+				case 'historyRedo':
+					e.preventDefault();
+					e.stopPropagation();
+					this.redo();
+					break;
 			}
 		}
 		window.addEventListener('beforeinput', manage_undo_redo);
 		window.addEventListener('input', manage_undo_redo); // in case of beforeinput event is not implemented (Firefox)
-
+		
 		// If your component is susceptible to be destroyed, don't forget to
 		// use window.removeEventListener in the Vue.js beforeUnmount handler
 	},
-
+	
 	mounted() {
 		this.mounted = true;
 	},
-
+	
 	computed: {
 		// This is the menu content
 		menu() {
@@ -141,21 +147,33 @@ export default {
 				{
 					text: 'New', title: 'New', icon: 'description', click: () => {
 						if (confirm('This will create an empty document. Are you sure?')) {
-							this.content = [ '' ];
+							this.content = [''];
 							this.resetStackTracking();
 							this.doImport();
 						}
 					}
 				},
-				{ text: 'Print', title: 'Print', icon: 'print', click: () => window.print() },
-				{ text: 'Insert Image', icon: 'image', disabled: !this.current_text_style, title: 'Insert Image', click: () => this.addImage() },
-				{ text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport() },
-				{ text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson() },
-
-				{ is: 'spacer' },
-
+				{text: 'Print', title: 'Print', icon: 'print', click: () => window.print()},
+				{
+					text: 'Insert Image',
+					icon: 'image',
+					disabled: !this.current_text_style,
+					title: 'Insert Image',
+					click: () => this.addImage()
+				},
+				{text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport()},
+				{text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson()},
+				
+				{is: 'spacer'},
+				
 				// Undo / redo commands
-				{ title: 'Undo', icon: 'undo', disabled: !this.canUndo, hotkey: this.isMacLike ? 'command+z' : 'ctrl+z', click: () => this.undo() },
+				{
+					title: 'Undo',
+					icon: 'undo',
+					disabled: !this.canUndo,
+					hotkey: this.isMacLike ? 'command+z' : 'ctrl+z',
+					click: () => this.undo()
+				},
 				{
 					title: 'Redo',
 					icon: 'redo',
@@ -163,9 +181,9 @@ export default {
 					hotkey: this.isMacLike ? 'shift+command+z' : 'ctrl+y',
 					click: () => this.redo()
 				},
-
-				{ is: 'spacer' },
-
+				
+				{is: 'spacer'},
+				
 				// Rich text menus
 				{
 					icon: 'format_align_left',
@@ -199,7 +217,7 @@ export default {
 					hotkey: this.isMacLike ? 'shift+command+j' : 'ctrl+shift+j',
 					click: () => document.execCommand('justifyFull')
 				},
-				{ is: 'separator' },
+				{is: 'separator'},
 				{
 					icon: 'format_bold',
 					title: 'Bold',
@@ -239,7 +257,7 @@ export default {
 					color: this.curColor,
 					update_color: (new_color) => document.execCommand('foreColor', false, new_color.hex8)
 				},
-				{ is: 'separator' },
+				{is: 'separator'},
 				{
 					icon: 'format_list_numbered',
 					title: 'Numbered list',
@@ -281,21 +299,33 @@ export default {
 						document.execCommand('formatBlock', false, '<div>');
 					}
 				},
-				{ icon: 'splitscreen', title: 'Page break', disabled: !this.current_text_style, click: () => this.insertPageBreak() },
-
-				{ is: 'spacer' },
-
+				{
+					icon: 'splitscreen',
+					title: 'Page break',
+					disabled: !this.current_text_style,
+					click: () => this.insertPageBreak()
+				},
+				
+				{
+					title: 'Create table',
+					icon: 'table_view',
+					disabled: !this.current_text_style,
+					click: () => this.startTableSetup()
+				},
+				
+				{is: 'spacer'},
+				
 				{ // Format menu
 					text: this.current_format_name,
 					title: 'Format',
 					icon: 'crop_free',
 					chevron: true,
-					menu: this.formats.map(([ text, w, h ]) => {
+					menu: this.formats.map(([text, w, h]) => {
 						return {
 							text,
 							active: (this.page_format_mm[0] === w && this.page_format_mm[1] === h),
 							click: () => {
-								this.page_format_mm = [ w, h ];
+								this.page_format_mm = [w, h];
 							}
 						}
 					}),
@@ -307,7 +337,7 @@ export default {
 					title: 'Margins',
 					icon: 'select_all',
 					chevron: true,
-					menu: this.margins.map(([ text, value ]) => {
+					menu: this.margins.map(([text, value]) => {
 						return {
 							text: text + ' (' + value + ')',
 							active: (this.page_margins === value),
@@ -325,14 +355,14 @@ export default {
 					icon: 'zoom_in',
 					chevron: true,
 					menu: [
-						[ '200%', 2.0 ],
-						[ '150%', 1.5 ],
-						[ '125%', 1.25 ],
-						[ '100%', 1.0 ],
-						[ '75%', 0.75 ],
-						[ '50%', 0.5 ],
-						[ '25%', 0.25 ]
-					].map(([ text, zoom ]) => {
+						['200%', 2.0],
+						['150%', 1.5],
+						['125%', 1.25],
+						['100%', 1.0],
+						['75%', 0.75],
+						['50%', 0.5],
+						['25%', 0.25]
+					].map(([text, zoom]) => {
 						return {
 							text,
 							active: this.zoom === zoom,
@@ -375,57 +405,57 @@ export default {
 				}
 			]
 		},
-
+		
 		// Formats management
 		current_format_name() {
 			const format = this.formats.find(
-				([ , width_mm, height_mm ]) => (this.page_format_mm[0] === width_mm && this.page_format_mm[1] === height_mm));
+				([, width_mm, height_mm]) => (this.page_format_mm[0] === width_mm && this.page_format_mm[1] === height_mm));
 			return format ? format[0] : (this.page_format_mm[0] + 'mm x ' + this.page_format_mm[1] + 'mm');
 		},
 		formats: () => [
-			[ 'A0', 841, 1189 ],
-			[ 'A0L', 1189, 841 ],
-			[ 'A1', 594, 841 ],
-			[ 'A1L', 841, 594 ],
-			[ 'A2', 420, 594 ],
-			[ 'A2L', 594, 420 ],
-			[ 'A3', 297, 420 ],
-			[ 'A3L', 420, 297 ],
-			[ 'A4', 210, 297 ],
-			[ 'A4L', 297, 210 ],
-			[ 'A5', 148, 210 ],
-			[ 'A5L', 210, 148 ],
-			[ 'A6', 105, 148 ],
-			[ 'A6L', 148, 105 ]
+			['A0', 841, 1189],
+			['A0L', 1189, 841],
+			['A1', 594, 841],
+			['A1L', 841, 594],
+			['A2', 420, 594],
+			['A2L', 594, 420],
+			['A3', 297, 420],
+			['A3L', 420, 297],
+			['A4', 210, 297],
+			['A4L', 297, 210],
+			['A5', 148, 210],
+			['A5L', 210, 148],
+			['A6', 105, 148],
+			['A6L', 148, 105]
 		],
-
+		
 		// Margins management
 		current_margins_name() {
-			const margins = this.margins.find(([ , margins ]) => (this.page_margins === margins));
+			const margins = this.margins.find(([, margins]) => (this.page_margins === margins));
 			return margins ? margins[0] : this.page_margins;
 		},
 		margins: () => [
-			[ 'Medium', '20mm' ],
-			[ 'Small', '15mm' ],
-			[ 'Slim', '10mm 15mm' ],
-			[ 'Tiny', '5mm' ]
+			['Medium', '20mm'],
+			['Small', '15mm'],
+			['Slim', '10mm 15mm'],
+			['Tiny', '5mm']
 		],
-
+		
 		// Current text style management
 		current_text_style() {
 			return this.mounted ? this.$refs.editor.current_text_style : false;
 		},
 		isLeftAligned() {
-			return [ 'start', 'left', '-moz-left' ].includes(this.current_text_style?.textAlign);
+			return ['start', 'left', '-moz-left'].includes(this.current_text_style?.textAlign);
 		},
 		isRightAligned() {
-			return [ 'end', 'right', '-moz-right' ].includes(this.current_text_style?.textAlign);
+			return ['end', 'right', '-moz-right'].includes(this.current_text_style?.textAlign);
 		},
 		isCentered() {
-			return [ 'center', '-moz-center' ].includes(this.current_text_style?.textAlign);
+			return ['center', '-moz-center'].includes(this.current_text_style?.textAlign);
 		},
 		isJustified() {
-			return [ 'justify', 'justify-all' ].includes(this.current_text_style?.textAlign);
+			return ['justify', 'justify-all'].includes(this.current_text_style?.textAlign);
 		},
 		isBold() {
 			const fontWeight = this.current_text_style?.fontWeight;
@@ -446,7 +476,7 @@ export default {
 			return this.current_text_style?.isList && this.current_text_style?.listStyleType === 'decimal';
 		},
 		isBulletedList() {
-			return this.current_text_style?.isList && [ 'disc', 'circle' ].includes(this.current_text_style?.listStyleType);
+			return this.current_text_style?.isList && ['disc', 'circle'].includes(this.current_text_style?.listStyleType);
 		},
 		isH1() {
 			return this.current_text_style?.headerLevel === 1;
@@ -460,22 +490,22 @@ export default {
 		curColor() {
 			return this.current_text_style?.color || 'transparent';
 		},
-
+		
 		// Platform management
 		isMacLike: () => /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform),
-
+		
 		// Undo / redo flags
 		// can_undo () { return this.undo_count > 0; },
 		// can_redo () { return this.content_history.length - this.undo_count - 1 > 0; }
 	},
-
+	
 	methods: {
 		// Page overlays (headers, footers, page numbers)
 		overlay(page, total) {
 			// Add page numbers on each page
 			let html = '<div style="position: absolute; bottom: 8mm; ' + ((page % 2) ? 'right' :
 				'left') + ': 10mm">Page ' + page + ' of ' + total + '</div>';
-
+			
 			// Add custom headers and footers from page 3
 			if (page >= 3) {
 				html +=
@@ -485,25 +515,25 @@ export default {
 			}
 			return html;
 		},
-
+		
 		// Undo / redo functions examples
 		// undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
 		// redo () { if(this.can_redo){ this._mute_next_content_watcher = true; this.content = this.content_history[++this.undo_count]; } },
 		// resetContentHistory () { this.content_history = []; this.undo_count = -1; },
-
+		
 		// Insert page break function example
 		async insertPageBreak() {
 			// insert paragraph at caret position
 			document.execCommand('insertParagraph');
-
+			
 			// insert a marker at caret position (start of the new paragraph)
 			const marker = '###PB###'; // must be regex compatible
 			document.execCommand('insertText', false, marker);
-
+			
 			// wait for v-model content update (two ticks are needed to reactivate watch on content)
 			await this.$nextTick();
 			await this.$nextTick();
-
+			
 			// find the marker inside content items and split this content item in two items between the two paragraphs
 			// only match root tags (p, div, h1, h2...) to avoid non-root tags like <li>
 			const regexp = new RegExp('<(p|div|h\\d)( [^/>]+)*>(<[^/>]+>)*' + marker);
@@ -520,7 +550,7 @@ export default {
 					return;
 				}
 			}
-
+			
 			// if the code didn't return before, the split didn't work (e.g. inside a <li>). just remove the marker from the content
 			for (let i = 0; i < this.content.length; i++) {
 				const item = this.content[i];
@@ -530,7 +560,7 @@ export default {
 			}
 		}
 	},
-
+	
 	watch: {
 		content: {
 			immediate: true,
@@ -553,42 +583,51 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-
-    // Retrieve the content from the local storage
-    const storedContent = useStorage('content-key', content);
-
-    // Create a debounced watcher for the content variable
-    watchDebounced(content, (newContent) => {
-          // Save the new value in local storage
-          storedContent.value = newContent;
-        },
-        { debounce: 1000 }
-    );
-
-    const {
-      downloadJson
-    } = useDownloadJson(content)
-
+		
+		// Retrieve the content from the local storage
+		const storedContent = useStorage('content-key', content);
+		
+		// Create a debounced watcher for the content variable
+		watchDebounced(content, (newContent) => {
+				// Save the new value in local storage
+				storedContent.value = newContent;
+			},
+			{debounce: 1000}
+		);
+		
+		const {
+			downloadJson
+		} = useDownloadJson(content)
+		
 		const {
 			doImport,
 		} = useDocumentImport(content)
-
+		
 		const {
 			addImage,
 		} = useImageUpload();
-
+		
 		const editor = ref();
-
+		
+		const {
+			isTableSetupOpen,
+			selectionAndRange,
+			startTableSetup,
+		} = useTableSetup()
+		
 		return {
 			content,
-			addImage, undo,
+			addImage,
+			undo,
 			redo,
 			canRedo,
 			canUndo,
 			resetStackTracking,
 			editor,
-      downloadJson,
-
+			downloadJson,
+			isTableSetupOpen,
+			selectionAndRange,
+			startTableSetup,
 			doImport,
 		}
 	}
