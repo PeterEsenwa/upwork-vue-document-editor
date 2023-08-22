@@ -78,6 +78,8 @@
 		
 		<table-setup
 			v-model="isTableSetupOpen"
+			@toggle-table-setup="toggleTableSetup"
+			:is-open="isTableSetupOpen"
 			:selection-and-range="selectionAndRange"
 		/>
 	</div>
@@ -809,6 +811,7 @@ export default {
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
+			toggleTableSetup,
 		} = useTableSetup()
 		
 		return {
@@ -837,6 +840,7 @@ export default {
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
+			toggleTableSetup,
 			doImport,
 		}
 	}

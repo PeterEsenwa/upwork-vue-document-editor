@@ -1,28 +1,33 @@
 export interface TableParams {
 	rows: number;
 	cols: number;
-	includeHeaders?: boolean; // This is optional and defaults to false if not provided
+	border?: number;
+	cellPadding?: number;
+	cellSpacing?: number;
+	includeHeaders?: boolean;
 }
 
 export function createHTMLTable(params: TableParams): string {
+	let borderString = params.border !== undefined ? `${params.border}px solid black` : '1px solid black';
+	let paddingString = params.cellPadding !== undefined ? `${params.cellPadding}px` : '8px';
+	let borderSpacingString = params.cellSpacing !== undefined ? `${params.cellSpacing}px` : '';
+
 	let tableHTML = `<table
-		style="border-collapse: collapse; width: 100%; table-layout: fixed;"
+		style="border-collapse: separate; border-spacing: ${borderSpacingString}; width: 100%; table-layout: fixed;"
 >`;
 
-	// Add headers if includeHeaders is true
 	if (params.includeHeaders) {
 		tableHTML += '<tr>';
 		for (let j = 0; j < params.cols; j++) {
-			tableHTML += '<th style="border: 1px solid black; padding: 8px;">Header ' + (j + 1) + '</th>';
+			tableHTML += `<th style="border: ${borderString}; padding: ${paddingString};">Header ${j + 1}</th>`;
 		}
 		tableHTML += '</tr>';
 	}
 
-	// Add rows and cols
 	for (let i = 0; i < params.rows; i++) {
 		tableHTML += '<tr>';
 		for (let j = 0; j < params.cols; j++) {
-			tableHTML += '<td style="border: 1px solid black; padding: 8px;"></td>';
+			tableHTML += `<td style="border: ${borderString}; padding: ${paddingString};"></td>`;
 		}
 		tableHTML += '</tr>';
 	}
