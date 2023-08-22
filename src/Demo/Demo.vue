@@ -11,13 +11,13 @@
 		>
 			<template #body>
 				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
-
+				
 				<div class="input-field">
 					<label for="header">Header :</label>
 					<div id="text-area" contenteditable="true" v-html="pageHeaderText"/>
 				</div>
 			</template>
-
+			
 			<template #footer>
 				<div class="modal-buttons">
 					<button
@@ -43,40 +43,40 @@
 		>
 			<template #body>
 				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
-
+				
 				<div class="input-field">
 					<label for="footer">Footer :</label>
 					<div id="text-area" contenteditable="true" v-html="pageFooterText"/>
 				</div>
 			</template>
-
-	      <template #footer>
-	        <div class="modal-buttons">
-	          <button
-		          class="submit-btn"
-	              @click="captureContent"
-	          >
-	              Save
-              </button>
-		        <button
-			        class="close-btn"
-			        @click="toggleFooter"
-		        >
-			        Cancel
-		        </button>
-	        </div>
-	      </template>
+			
+			<template #footer>
+				<div class="modal-buttons">
+					<button
+						class="submit-btn"
+						@click="captureContent"
+					>
+						Save
+					</button>
+					<button
+						class="close-btn"
+						@click="toggleFooter"
+					>
+						Cancel
+					</button>
+				</div>
+			</template>
 		</base-modal>
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
-			 v-model:content="content"
-			 :overlay="overlay"
-			 :zoom="zoom"
-			 :page_format_mm="page_format_mm"
-			 :page_margins="page_margins"
-			 :display="display"/>
+							 v-model:content="content"
+							 :overlay="overlay"
+							 :zoom="zoom"
+							 :page_format_mm="page_format_mm"
+							 :page_margins="page_margins"
+							 :display="display"/>
 		
-	<table-setup
+		<table-setup
 			v-model="isTableSetupOpen"
 			:selection-and-range="selectionAndRange"
 		/>
@@ -461,7 +461,8 @@ export default {
 					title: 'Create table',
 					icon: 'table_view',
 					disabled: !this.current_text_style,
-					click: () => this.startTableSetup()},
+					click: () => this.startTableSetup()
+				},
 				
 				{is: 'spacer'},
 				
@@ -720,7 +721,7 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-
+		
 		const {
 			isHeader,
 			isFooter,
@@ -732,9 +733,9 @@ export default {
 			temporaryFooterText,
 			temporaryHeaderText,
 		} = useSectionMarkers();
-
+		
 		const currentBgColor = ref('transparent');
-
+		
 		const overlay = (page, total) => {
 			const styles = {
 				base: `position: absolute;`,
@@ -742,10 +743,10 @@ export default {
 				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: ${currentBgColor.value};`,
 				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
 			};
-
+			
 			// Add page numbers on each page
 			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
-
+			
 			// Add custom headers and footers from page 3
 			if (page) {
 				if (pageHeaderText.value.trim()) {
@@ -762,7 +763,7 @@ export default {
 		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
 		const storedHeaderBackgroundColor = useStorage('current-background-color-key', currentBgColor);
 		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
-
+		
 		// Create a debounced watcher for the content variable
 		watchDebounced(content, (newContent) => {
 				// Save the new value in local storage
@@ -770,26 +771,26 @@ export default {
 			},
 			{debounce: 1000}
 		);
-
+		
 		watchDebounced(pageHeaderText, (newHeaderText) => {
 				storedPageHeaderText.value = newHeaderText;
 			},
 			{debounce: 1000}
 		);
-
+		
 		watchDebounced(pageFooterText, (newFooterText) => {
 				storedPageFooterText.value = newFooterText;
 			},
 			{debounce: 1000}
 		);
-
+		
 		watchDebounced(currentBgColor, (newBgColor) => {
 				storedHeaderBackgroundColor.value = newBgColor;
 			},
 			{debounce: 1000}
 		);
-
-
+		
+		
 		const {
 			downloadJson
 		} = useDownloadJson(content)
@@ -922,29 +923,29 @@ body {
 }
 
 #text-area {
-  width: auto;
-  height: 5em;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px 15px;
-  font-family: Arial, sans-serif;
-  font-size: 14px;
-  resize: vertical;
-  overflow: auto;
-  outline: none;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+	width: auto;
+	height: 5em;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 8px 15px;
+	font-family: Arial, sans-serif;
+	font-size: 14px;
+	resize: vertical;
+	overflow: auto;
+	outline: none;
+	white-space: pre-wrap;
+	word-wrap: break-word;
 }
 
 .submit-btn {
-	 background: #188038;
-	 color: white;
-	 padding: 10px 20px;
-	 margin-right: 10px;
-	 border-radius: 50px;
-	 border: none;
-	 cursor: pointer;
-	 outline: none;
+	background: #188038;
+	color: white;
+	padding: 10px 20px;
+	margin-right: 10px;
+	border-radius: 50px;
+	border: none;
+	cursor: pointer;
+	outline: none;
 }
 
 .close-btn {
