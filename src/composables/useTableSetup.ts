@@ -11,9 +11,14 @@ export default () => {
 		isTableSetupOpen.value = true;
 	}
 
+	const toggleTableSetup = () => {
+		isTableSetupOpen.value = !isTableSetupOpen.value
+	}
+
 	return {
 		isTableSetupOpen,
 		selectionAndRange,
 		startTableSetup,
+		toggleTableSetup,
 	}
 }
