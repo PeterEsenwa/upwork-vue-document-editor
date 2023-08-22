@@ -226,7 +226,6 @@ export default (props: DocumentEditorProps, emit: DocumentEditorEmit) => {
 	}
 
 	const observer = new MutationObserver((mutations) => {
-		console.log('mutations', mutations);
 		for (const mutation of mutations) {
 			if (mutation.type === 'childList') {
 				// A new child element has been added to the parent element.

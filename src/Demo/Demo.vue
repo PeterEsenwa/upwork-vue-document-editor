@@ -3,7 +3,70 @@
 		
 		<!-- Top bar -->
 		<vue-file-toolbar-menu :content="menu" class="bar"/>
-		
+		<base-modal
+			:model-value="isHeader"
+			@toggle-open="toggleHeader"
+			:is-open="isHeader"
+			class="base-dialog"
+		>
+			<template #body>
+				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
+				
+				<div class="input-field">
+					<label for="header">Header :</label>
+					<div id="text-area" contenteditable="true" v-html="pageHeaderText"/>
+				</div>
+			</template>
+			
+			<template #footer>
+				<div class="modal-buttons">
+					<button
+						class="submit-btn"
+						@click="captureContent"
+					>
+						Save
+					</button>
+					<button
+						class="close-btn"
+						@click="toggleHeader"
+					>
+						Cancel
+					</button>
+				</div>
+			</template>
+		</base-modal>
+		<base-modal
+			:model-value="isFooter"
+			@toggle-open="toggleFooter"
+			:is-open="isFooter"
+			class="base-dialog"
+		>
+			<template #body>
+				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
+				
+				<div class="input-field">
+					<label for="footer">Footer :</label>
+					<div id="text-area" contenteditable="true" v-html="pageFooterText"/>
+				</div>
+			</template>
+			
+			<template #footer>
+				<div class="modal-buttons">
+					<button
+						class="submit-btn"
+						@click="captureContent"
+					>
+						Save
+					</button>
+					<button
+						class="close-btn"
+						@click="toggleFooter"
+					>
+						Cancel
+					</button>
+				</div>
+			</template>
+		</base-modal>
 		<!-- Document editor -->
 		<vue-document-editor class="editor" ref="editor"
 							 v-model:content="content"
@@ -31,9 +94,11 @@ import {useStorage, watchDebounced} from "@vueuse/core";
 import useDownloadJson from "@/composables/useDownloadJson";
 import TableSetup from "@/components/tableSetup.vue";
 import useTableSetup from "@/composables/useTableSetup";
+import BaseModal from "@/components/baseModal.vue";
+import useSectionMarkers from "@/composables/useSectionMarkers";
 
 export default {
-	components: {TableSetup, VueDocumentEditor, VueFileToolbarMenu},
+	components: {BaseModal, TableSetup, VueDocumentEditor, VueFileToolbarMenu},
 	
 	data() {
 		return {
@@ -50,7 +115,7 @@ export default {
 			zoom_min: 0.10,
 			zoom_max: 5.0,
 			page_format_mm: [210, 297],
-			page_margins: '10mm 15mm',
+			page_margins: '15mm',
 			display: 'grid', // ["grid", "vertical", "horizontal"]
 			mounted: false, // will be true after this component is mounted
 			undo_count: -1, // contains the number of times user can undo (= current position in content_history)
@@ -140,6 +205,90 @@ export default {
 	},
 	
 	computed: {
+		headerMenu() {
+			return [
+				// Rich text menus
+				{
+					icon: 'format_align_left',
+					title: 'Align left',
+					active: this.isLeftAligned,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+l' : 'ctrl+shift+l',
+					click: () => document.execCommand('justifyLeft')
+				},
+				{
+					icon: 'format_align_center',
+					title: 'Align center',
+					active: this.isCentered,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+e' : 'ctrl+shift+e',
+					click: () => document.execCommand('justifyCenter')
+				},
+				{
+					icon: 'format_align_right',
+					title: 'Align right',
+					active: this.isRightAligned,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+r' : 'ctrl+shift+r',
+					click: () => document.execCommand('justifyRight')
+				},
+				{
+					icon: 'format_align_justify',
+					title: 'Justify content',
+					active: this.isJustified,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'shift+command+j' : 'ctrl+shift+j',
+					click: () => document.execCommand('justifyFull')
+				},
+				{is: 'separator'},
+				{
+					icon: 'format_bold',
+					title: 'Bold',
+					active: this.isBold,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+b' : 'ctrl+b',
+					click: () => document.execCommand('bold')
+				},
+				{
+					icon: 'format_italic',
+					title: 'Italic',
+					active: this.isItalic,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+i' : 'ctrl+i',
+					click: () => document.execCommand('italic')
+				},
+				{
+					icon: 'format_underline',
+					title: 'Underline',
+					active: this.isUnderline,
+					// disabled: !this.current_text_style,
+					hotkey: this.isMacLike ? 'command+u' : 'ctrl+u',
+					click: () => document.execCommand('underline')
+				},
+				{
+					icon: 'format_strikethrough',
+					title: 'Strike through',
+					active: this.isStrikeThrough,
+					// disabled: !this.current_text_style,
+					click: () => document.execCommand('strikethrough')
+				},
+				{
+					is: 'button-color',
+					type: 'compact',
+					menu_class: 'align-center',
+					// disabled: !this.current_text_style,
+					color: this.currentBgColor,
+					update_color: (new_color) => this.currentBgColor = new_color.hex8
+				},
+				{
+					text: 'Insert Image',
+					icon: 'image',
+					// disabled: !this.current_text_style,
+					title: 'Insert Image',
+					click: () => this.sectionImage()
+				},
+			]
+		},
 		// This is the menu content
 		menu() {
 			return [
@@ -163,6 +312,8 @@ export default {
 				},
 				{text: 'Import', title: 'Import', icon: 'import_export', click: () => this.doImport()},
 				{text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson()},
+				{text: 'Header', title: 'Add Header', click: () => this.toggleHeader()},
+				{text: 'Footer', title: 'Add Footer', click: () => this.toggleFooter()},
 				
 				{is: 'spacer'},
 				
@@ -501,20 +652,7 @@ export default {
 	
 	methods: {
 		// Page overlays (headers, footers, page numbers)
-		overlay(page, total) {
-			// Add page numbers on each page
-			let html = '<div style="position: absolute; bottom: 8mm; ' + ((page % 2) ? 'right' :
-				'left') + ': 10mm">Page ' + page + ' of ' + total + '</div>';
-			
-			// Add custom headers and footers from page 3
-			if (page >= 3) {
-				html +=
-					'<div style="position: absolute; left: 0; top: 0; right: 0; padding: 3mm 5mm; background: rgba(200, 220, 240, 0.5)"><strong>MYCOMPANY</strong> example.com /// This is a custom header overlay</div>';
-				html +=
-					'<div style="position: absolute; left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt">MY COMPANY - example.com /// This is a custom footer overlay</div>';
-			}
-			return html;
-		},
+		
 		
 		// Undo / redo functions examples
 		// undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
@@ -584,8 +722,47 @@ export default {
 			resetStackTracking,
 		} = useDocument();
 		
+		const {
+			isHeader,
+			isFooter,
+			toggleHeader,
+			toggleFooter,
+			pageHeaderText,
+			pageFooterText,
+			captureContent,
+			temporaryFooterText,
+			temporaryHeaderText,
+		} = useSectionMarkers();
+		
+		const currentBgColor = ref('transparent');
+		
+		const overlay = (page, total) => {
+			const styles = {
+				base: `position: absolute;`,
+				number: `bottom: 8mm; ${(page % 2) ? 'right' : 'left'}: 10mm`,
+				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: ${currentBgColor.value};`,
+				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
+			};
+			
+			// Add page numbers on each page
+			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
+			
+			// Add custom headers and footers from page 3
+			if (page) {
+				if (pageHeaderText.value.trim()) {
+					html += `<div style="${styles.base} ${styles.header}">${pageHeaderText.value}</div>`;
+				}
+				if (pageFooterText.value.trim()) {
+					html += `<div style="${styles.base} ${styles.footer}">${pageFooterText.value}</div>`;
+				}
+			}
+			return html;
+		}
 		// Retrieve the content from the local storage
 		const storedContent = useStorage('content-key', content);
+		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
+		const storedHeaderBackgroundColor = useStorage('current-background-color-key', currentBgColor);
+		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
 		
 		// Create a debounced watcher for the content variable
 		watchDebounced(content, (newContent) => {
@@ -594,6 +771,25 @@ export default {
 			},
 			{debounce: 1000}
 		);
+		
+		watchDebounced(pageHeaderText, (newHeaderText) => {
+				storedPageHeaderText.value = newHeaderText;
+			},
+			{debounce: 1000}
+		);
+		
+		watchDebounced(pageFooterText, (newFooterText) => {
+				storedPageFooterText.value = newFooterText;
+			},
+			{debounce: 1000}
+		);
+		
+		watchDebounced(currentBgColor, (newBgColor) => {
+				storedHeaderBackgroundColor.value = newBgColor;
+			},
+			{debounce: 1000}
+		);
+		
 		
 		const {
 			downloadJson
@@ -605,10 +801,10 @@ export default {
 		
 		const {
 			addImage,
+			sectionImage,
 		} = useImageUpload();
 		
 		const editor = ref();
-		
 		const {
 			isTableSetupOpen,
 			selectionAndRange,
@@ -618,6 +814,7 @@ export default {
 		return {
 			content,
 			addImage,
+			sectionImage,
 			undo,
 			redo,
 			canRedo,
@@ -625,6 +822,18 @@ export default {
 			resetStackTracking,
 			editor,
 			downloadJson,
+			isHeader,
+			toggleHeader,
+			isFooter,
+			toggleFooter,
+			pageHeaderText,
+			pageFooterText,
+			temporaryFooterText,
+			temporaryHeaderText,
+			overlay,
+			captureContent,
+			currentBgColor,
+			
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
@@ -675,7 +884,8 @@ body {
 	min-width: 100%;
 }
 
-.bar {
+.bar,
+.header-bar {
 	position: sticky;
 	left: 0;
 	top: 0;
@@ -688,5 +898,64 @@ body {
 	--bar-button-open-color: #188038;
 	--bar-button-active-bkg: #e6f4ea;
 	--bar-button-open-bkg: #e6f4ea;
+}
+
+.header-bar {
+	width: auto;
+}
+
+.input-field {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 1em;
+	width: 50vw;
+	min-width: 10em;
+}
+
+.input-field label {
+	margin-bottom: 5px;
+}
+
+.input-field textarea {
+	padding: 10px;
+	border: 1px solid #cccccc;
+	border-radius: 4px;
+}
+
+#text-area {
+	width: auto;
+	height: 5em;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	padding: 8px 15px;
+	font-family: Arial, sans-serif;
+	font-size: 14px;
+	resize: vertical;
+	overflow: auto;
+	outline: none;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+.submit-btn {
+	background: #188038;
+	color: white;
+	padding: 10px 20px;
+	margin-right: 10px;
+	border-radius: 50px;
+	border: none;
+	cursor: pointer;
+	outline: none;
+}
+
+.close-btn {
+	background: white;
+	color: #188038;
+	padding: 10px 20px;
+	margin-left: 10px;
+	border-radius: 50px;
+	border: 1px solid #188038;
+	cursor: pointer;
+	outline: none;
 }
 </style>
