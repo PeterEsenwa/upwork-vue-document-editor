@@ -1,8 +1,8 @@
 import {computed, ref} from 'vue';
 
 export default () => {
-    const temporaryHeaderText = ref<string | undefined>();
-    const temporaryFooterText = ref<string | undefined>();
+    const temporaryHeaderText = ref<string | undefined>('');
+    const temporaryFooterText = ref<string | undefined>('');
 
     const isHeader = ref(false);
 
