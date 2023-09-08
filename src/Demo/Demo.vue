@@ -775,12 +775,18 @@ export default {
 		);
 		
 		watchDebounced(pageHeaderText, (newHeaderText) => {
+			 if (!newHeaderText) {
+				  storedPageHeaderText.value = '';
+			 }
 				storedPageHeaderText.value = newHeaderText;
 			},
 			{debounce: 1000}
 		);
 		
 		watchDebounced(pageFooterText, (newFooterText) => {
+				 if (!newFooterText) {
+					  storedPageFooterText.value = '';
+				 }
 				storedPageFooterText.value = newFooterText;
 			},
 			{debounce: 1000}
