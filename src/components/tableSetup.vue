@@ -29,7 +29,13 @@
 					<label for="hasColumnHeaders" class="form-label">Has headers</label>
 					<input id="hasColumnHeaders" type="checkbox" v-model="options.includeHeaders" class="form-input"/>
 				</div>
-				<button type="button" class="form-button" @click="doTableInsert">Create</button>
+				<button type="button" class="form-button" @click="doTableInsert">
+					{{
+						props.existingTable
+							? 'Update table'
+							: 'Insert table'
+					}}
+				</button>
 			</form>
 		</dialog-panel>
 	</headless-dialog>
@@ -37,30 +43,24 @@
 
 <script setup lang="ts">
 import {Dialog as HeadlessDialog, DialogOverlay, DialogPanel} from '@headlessui/vue';
-import {useVModel} from "@vueuse/core";
-import {reactive} from "vue";
-import createHTMLTable from "@/utils/createTable";
+import TableComponent from "@/components/tableComponent.vue";
 import {insertHtmlAtCursor, SelectionAndRange} from "@/utils/insertHTMLStCursor";
+import {createApp, onBeforeMount, reactive} from "vue";
+import {useVModel} from "@vueuse/core";
+import {ExistingTableInfo, TableOptions} from "@/types/TableOptions";
 
-const props = withDefaults(defineProps<{
-	modelValue?: boolean;
-	selectionAndRange?: SelectionAndRange;
-}>(), {
-	modelValue: false,
-	selectionAndRange: undefined
-});
+const props = defineProps<{
+	modelValue: boolean;
+	selectionAndRange: SelectionAndRange | undefined;
+	existingTable?: ExistingTableInfo;
+}>();
 
 const emit = defineEmits([
 	'toggle-table-setup',
+	'update-table'
 ]);
 
-const isOpen = useVModel(props, 'modelValue');
-
-const close = () => {
-	emit('toggle-table-setup');
-};
-
-const options = reactive({
+const options = reactive(<TableOptions>{
 	rows: 2,
 	cols: 2,
 	// width: 100,
@@ -71,11 +71,44 @@ const options = reactive({
 	includeHeaders: false
 });
 
+onBeforeMount(() => {
+	if (props.existingTable?.options) {
+		// when editing, we need to set the options to the table we are editing
+		
+		options.rows = props.existingTable.options.rows;
+		options.cols = props.existingTable.options.cols;
+		
+		// options.width = props.existingTable.options.width;
+		options.height = props.existingTable.options.height;
+		options.border = props.existingTable.options.border;
+		options.cellPadding = props.existingTable.options.cellPadding;
+		options.cellSpacing = props.existingTable.options.cellSpacing;
+		options.includeHeaders = props.existingTable.options.includeHeaders;
+	}
+})
+
+const isOpen = useVModel(props, 'modelValue');
+const close = () => {
+	emit('toggle-table-setup');
+};
+
 const doTableInsert = () => {
-	const table = createHTMLTable(options);
+	if (props.existingTable) {
+		// when editing, we need to emit the new options and table key to the parent component
+		
+		emit('update-table', <ExistingTableInfo>{
+			options,
+			key: props.existingTable.key
+		})
+		
+		return close();
+	}
 	
-	insertHtmlAtCursor(table, props.selectionAndRange);
+	const instance = createApp(TableComponent, {
+		modelValue: options,
+	});
 	
+	insertHtmlAtCursor(instance, props.selectionAndRange);
 	close();
 };
 </script>
@@ -116,7 +149,7 @@ const doTableInsert = () => {
 .form-label {
 	margin-bottom: 0.2em;
 	font-size: 1em;
-	font-weight: semi-bold;
+	font-weight: 600;
 }
 
 .form-input {

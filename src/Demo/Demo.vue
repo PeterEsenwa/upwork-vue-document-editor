@@ -1,6 +1,6 @@
 <template>
 	<div class="main">
-		
+
 		<!-- Top bar -->
 		<vue-file-toolbar-menu :content="menu" class="bar"/>
 		<base-modal
@@ -11,13 +11,13 @@
 		>
 			<template #body>
 				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
-				
+
 				<div class="input-field">
 					<label for="header">Header :</label>
 					<div id="text-area" contenteditable="true" v-html="pageHeaderText"/>
 				</div>
 			</template>
-			
+
 			<template #footer>
 				<div class="modal-buttons">
 					<button
@@ -43,13 +43,13 @@
 		>
 			<template #body>
 				<vue-file-toolbar-menu :content="headerMenu" class="header-bar"/>
-				
+
 				<div class="input-field">
 					<label for="footer">Footer :</label>
 					<div id="text-area" contenteditable="true" v-html="pageFooterText"/>
 				</div>
 			</template>
-			
+
 			<template #footer>
 				<div class="modal-buttons">
 					<button
@@ -75,9 +75,10 @@
 							 :page_format_mm="page_format_mm"
 							 :page_margins="page_margins"
 							 :display="display"/>
-		
+
 		<table-setup
 			v-model="isTableSetupOpen"
+			:existing-table="existingTableInfo"
 			@toggle-table-setup="toggleTableSetup"
 			:is-open="isTableSetupOpen"
 			:selection-and-range="selectionAndRange"
@@ -101,7 +102,7 @@ import useSectionMarkers from "@/composables/useSectionMarkers";
 
 export default {
 	components: {BaseModal, TableSetup, VueDocumentEditor, VueFileToolbarMenu},
-	
+
 	data() {
 		return {
 			// This is where the pages content is stored and synced
@@ -124,13 +125,13 @@ export default {
 			content_history: [] // contains the content states for undo/redo operations
 		}
 	},
-	
+
 	created() {
 		// Initialize gesture flags
 		let start_zoom_gesture = false;
 		let start_dist_touch = false;
 		let start_zoom_touch = false;
-		
+
 		// Manage ctrl+scroll zoom (or trackpad pinch)
 		window.addEventListener('wheel', (e) => {
 			if (e.ctrlKey) {
@@ -138,7 +139,7 @@ export default {
 				this.zoom = Math.min(Math.max(this.zoom - e.deltaY * 0.01, this.zoom_min), this.zoom_max);
 			}
 		}, {passive: false});
-		
+
 		// Manage trackpad pinch on Safari
 		window.addEventListener('gesturestart', (e) => {
 			e.preventDefault();
@@ -153,7 +154,7 @@ export default {
 		window.addEventListener('gestureend', () => {
 			start_zoom_gesture = false;
 		});
-		
+
 		// Manage pinch to zoom for touch devices
 		window.addEventListener('touchstart', (e) => {
 			if (e.touches.length === 2) {
@@ -179,7 +180,7 @@ export default {
 			start_dist_touch = false;
 			start_zoom_touch = false;
 		}, {passive: false});
-		
+
 		// Manage history undo/redo events
 		const manage_undo_redo = (e) => {
 			switch (e?.inputType) {
@@ -197,15 +198,15 @@ export default {
 		}
 		window.addEventListener('beforeinput', manage_undo_redo);
 		window.addEventListener('input', manage_undo_redo); // in case of beforeinput event is not implemented (Firefox)
-		
+
 		// If your component is susceptible to be destroyed, don't forget to
 		// use window.removeEventListener in the Vue.js beforeUnmount handler
 	},
-	
+
 	mounted() {
 		this.mounted = true;
 	},
-	
+
 	computed: {
 		headerMenu() {
 			return [
@@ -316,9 +317,9 @@ export default {
 				{text: 'Export', title: 'Export', icon: 'download', click: () => this.downloadJson()},
 				{text: 'Header', title: 'Add Header', click: () => this.toggleHeader()},
 				{text: 'Footer', title: 'Add Footer', click: () => this.toggleFooter()},
-				
+
 				{is: 'spacer'},
-				
+
 				// Undo / redo commands
 				{
 					title: 'Undo',
@@ -334,9 +335,9 @@ export default {
 					hotkey: this.isMacLike ? 'shift+command+z' : 'ctrl+y',
 					click: () => this.redo()
 				},
-				
+
 				{is: 'spacer'},
-				
+
 				// Rich text menus
 				{
 					icon: 'format_align_left',
@@ -458,16 +459,16 @@ export default {
 					disabled: !this.current_text_style,
 					click: () => this.insertPageBreak()
 				},
-				
+
 				{
 					title: 'Create table',
 					icon: 'table_view',
 					disabled: !this.current_text_style,
 					click: () => this.startTableSetup()
 				},
-				
+
 				{is: 'spacer'},
-				
+
 				{ // Format menu
 					text: this.current_format_name,
 					title: 'Format',
@@ -558,7 +559,7 @@ export default {
 				}
 			]
 		},
-		
+
 		// Formats management
 		current_format_name() {
 			const format = this.formats.find(
@@ -581,7 +582,7 @@ export default {
 			['A6', 105, 148],
 			['A6L', 148, 105]
 		],
-		
+
 		// Margins management
 		current_margins_name() {
 			const margins = this.margins.find(([, margins]) => (this.page_margins === margins));
@@ -593,7 +594,7 @@ export default {
 			['Slim', '10mm 15mm'],
 			['Tiny', '5mm']
 		],
-		
+
 		// Current text style management
 		current_text_style() {
 			return this.mounted ? this.$refs.editor.current_text_style : false;
@@ -643,37 +644,37 @@ export default {
 		curColor() {
 			return this.current_text_style?.color || 'transparent';
 		},
-		
+
 		// Platform management
 		isMacLike: () => /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform),
-		
+
 		// Undo / redo flags
 		// can_undo () { return this.undo_count > 0; },
 		// can_redo () { return this.content_history.length - this.undo_count - 1 > 0; }
 	},
-	
+
 	methods: {
 		// Page overlays (headers, footers, page numbers)
-		
-		
+
+
 		// Undo / redo functions examples
 		// undo () { if(this.can_undo){ this._mute_next_content_watcher = true; this.content = this.content_history[--this.undo_count]; } },
 		// redo () { if(this.can_redo){ this._mute_next_content_watcher = true; this.content = this.content_history[++this.undo_count]; } },
 		// resetContentHistory () { this.content_history = []; this.undo_count = -1; },
-		
+
 		// Insert page break function example
 		async insertPageBreak() {
 			// insert paragraph at caret position
 			document.execCommand('insertParagraph');
-			
+
 			// insert a marker at caret position (start of the new paragraph)
 			const marker = '###PB###'; // must be regex compatible
 			document.execCommand('insertText', false, marker);
-			
+
 			// wait for v-model content update (two ticks are needed to reactivate watch on content)
 			await this.$nextTick();
 			await this.$nextTick();
-			
+
 			// find the marker inside content items and split this content item in two items between the two paragraphs
 			// only match root tags (p, div, h1, h2...) to avoid non-root tags like <li>
 			const regexp = new RegExp('<(p|div|h\\d)( [^/>]+)*>(<[^/>]+>)*' + marker);
@@ -690,7 +691,7 @@ export default {
 					return;
 				}
 			}
-			
+
 			// if the code didn't return before, the split didn't work (e.g. inside a <li>). just remove the marker from the content
 			for (let i = 0; i < this.content.length; i++) {
 				const item = this.content[i];
@@ -700,7 +701,7 @@ export default {
 			}
 		}
 	},
-	
+
 	watch: {
 		content: {
 			immediate: true,
@@ -723,7 +724,7 @@ export default {
 			canUndo,
 			resetStackTracking,
 		} = useDocument();
-		
+
 		const {
 			isHeader,
 			isFooter,
@@ -735,9 +736,9 @@ export default {
 			temporaryFooterText,
 			temporaryHeaderText,
 		} = useSectionMarkers();
-		
+
 		const currentBgColor = ref('transparent');
-		
+
 		const overlay = (page, total) => {
 			const styles = {
 				base: `position: absolute;`,
@@ -745,10 +746,10 @@ export default {
 				header: `left: 0; top: 0; right: 0; padding: 3mm 5mm; background: ${currentBgColor.value};`,
 				footer: `left: 10mm; right: 10mm; bottom: 5mm; text-align:center; font-size:10pt;`
 			};
-			
+
 			// Add page numbers on each page
 			let html = `<div style="${styles.base} ${styles.number}">Page ${page} of ${total}</div>`;
-			
+
 			// Add custom headers and footers from page 3
 			if (page) {
 				if (pageHeaderText.value.trim()) {
@@ -765,7 +766,7 @@ export default {
 		const storedPageHeaderText = useStorage('page-header-text-key', temporaryHeaderText);
 		const storedHeaderBackgroundColor = useStorage('current-background-color-key', currentBgColor);
 		const storedPageFooterText = useStorage('page-footer-text-key', temporaryFooterText);
-		
+
 		// Create a debounced watcher for the content variable
 		watchDebounced(content, (newContent) => {
 				// Save the new value in local storage
@@ -773,7 +774,7 @@ export default {
 			},
 			{debounce: 1000}
 		);
-		
+
 		watchDebounced(pageHeaderText, (newHeaderText) => {
 			 if (!newHeaderText) {
 				  storedPageHeaderText.value = '';
@@ -782,7 +783,7 @@ export default {
 			},
 			{debounce: 1000}
 		);
-		
+
 		watchDebounced(pageFooterText, (newFooterText) => {
 				 if (!newFooterText) {
 					  storedPageFooterText.value = '';
@@ -791,29 +792,30 @@ export default {
 			},
 			{debounce: 1000}
 		);
-		
+
 		watchDebounced(currentBgColor, (newBgColor) => {
 				storedHeaderBackgroundColor.value = newBgColor;
 			},
 			{debounce: 1000}
 		);
-		
-		
+
+
 		const {
 			downloadJson
 		} = useDownloadJson(content)
-		
+
 		const {
 			doImport,
 		} = useDocumentImport(content)
-		
+
 		const {
 			addImage,
 			sectionImage,
 		} = useImageUpload();
-		
+
 		const editor = ref();
 		const {
+			existingTableInfo,
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,
@@ -843,6 +845,7 @@ export default {
 			captureContent,
 			currentBgColor,
 			
+			existingTableInfo,
 			isTableSetupOpen,
 			selectionAndRange,
 			startTableSetup,

@@ -34,6 +34,8 @@ export function createHTMLTable(params: TableParams): string {
 
 	tableHTML += '</table>';
 
+	console.log(tableHTML);
+
 	return tableHTML;
 }
 

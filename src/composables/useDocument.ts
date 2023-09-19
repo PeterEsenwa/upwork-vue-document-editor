@@ -1,8 +1,20 @@
-import { ref, onBeforeUnmount } from 'vue';
+import {ref, onBeforeUnmount, markRaw} from 'vue';
 import { useRefHistory } from '@vueuse/core'
+import TableComponent from "@/components/tableComponent.vue";
 
 export default () => {
-    const content = ref([]);
+    const content = ref([
+		{ template: markRaw(TableComponent), props: {
+				rows: 2,
+				cols: 2,
+				// width: 100,
+				height: 100,
+				border: 1,
+				cellPadding: 10,
+				cellSpacing: 0,
+				includeHeaders: false
+			} }
+	]);
 
 	const {
 		canRedo,

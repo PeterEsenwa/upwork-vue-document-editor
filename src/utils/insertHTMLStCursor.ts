@@ -1,3 +1,6 @@
+import {App, ComponentOptions, defineCustomElement, markRaw} from "vue";
+import {customAlphabet} from "nanoid/non-secure";
+
 export type SelectionAndRange = { range: Range | undefined; sel: Selection | null };
 
 export function retrieveSelectionAndRange(): SelectionAndRange {
@@ -21,7 +24,7 @@ export function retrieveSelectionAndRange(): SelectionAndRange {
 }
 
 export function insertHtmlAtCursor(
-	html: string,
+	html: string | Node | Element | App<Element>,
 	selectionRangePosition: ReturnType<typeof retrieveSelectionAndRange> = retrieveSelectionAndRange()
 ) {
 	let { sel, range } = selectionRangePosition;
@@ -33,7 +36,14 @@ export function insertHtmlAtCursor(
 
 	// Create a new div element and set its inner HTML to the passed HTML string
 	let el: HTMLDivElement = document.createElement("div");
-	el.innerHTML = html;
+
+	if (typeof html === 'string') {
+		el.innerHTML = html;
+	} else if (html instanceof Node || html instanceof Element) {
+		el.appendChild(html);
+	} else {
+		html.mount(el)
+	}
 
 	// Create an empty DocumentFragment that will hold the nodes for insertion
 	let frag: DocumentFragment = document.createDocumentFragment(), node: ChildNode | null,
@@ -57,4 +67,27 @@ export function insertHtmlAtCursor(
 		sel.removeAllRanges();
 		sel.addRange(range);
 	}
+}
+
+const nanoid = customAlphabet('1234567890', 5);
+
+export const insertVueComponentAtCursor = (componentOptions: ComponentOptions, props: Record<any, any>) => {
+	console.log(props);
+	if (!componentOptions.template) return;
+
+	console.log(componentOptions);
+	console.log(componentOptions.template);
+
+	// const componentElement = defineCustomElement(componentOptions.template as any);
+
+	// const name = `component-table`;
+	// customElements.define(name, componentElement);
+
+	// const html = new componentElement({
+	// 	modelValue: props,
+	// });
+	//
+	// console.log('html', html);
+
+	// insertHtmlAtCursor(html);
 }
